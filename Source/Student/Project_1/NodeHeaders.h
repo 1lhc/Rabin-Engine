@@ -18,6 +18,8 @@
 
 // Student Decorator Nodes
 #include "Decorator/D_AlwaysTrue.h"
+#include "Decorator/D_DelayFiveSeconds.h"
+#include "Decorator/D_RepeatTwoTimes.h"
 
 // Example Leaf Nodes
 #include "Leaf/L_CheckMouseClick.h"
@@ -34,3 +36,4 @@
 #include "Leaf/L_TiltPitch.h"
 #include "Leaf/L_JumpAway.h"
 #include "Leaf/L_SpeedUp.h"
+#include "Leaf/L_ScaleUp.h"

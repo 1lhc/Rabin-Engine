@@ -254,8 +254,10 @@
     <ClInclude Include="Source\Student\Project_1\ControlFlow\C_Sequencer.h" />
     <ClInclude Include="Source\Student\Project_1\Decorator\D_AlwaysTrue.h" />
     <ClInclude Include="Source\Student\Project_1\Decorator\D_Delay.h" />
+    <ClInclude Include="Source\Student\Project_1\Decorator\D_DelayFiveSeconds.h" />
     <ClInclude Include="Source\Student\Project_1\Decorator\D_InvertedRepeater.h" />
     <ClInclude Include="Source\Student\Project_1\Decorator\D_RepeatFourTimes.h" />
+    <ClInclude Include="Source\Student\Project_1\Decorator\D_RepeatTwoTimes.h" />
     <ClInclude Include="Source\Student\Project_1\Leaf\L_ChangeToRandomColor.h" />
     <ClInclude Include="Source\Student\Project_1\Leaf\L_CheckMouseClick.h" />
     <ClInclude Include="Source\Student\Project_1\Leaf\L_Idle.h" />
@@ -266,6 +268,7 @@
     <ClInclude Include="Source\Student\Project_1\Leaf\L_PlaySound.h" />
     <ClInclude Include="Source\Student\Project_1\Leaf\L_RotateYaw.h" />
     <ClInclude Include="Source\Student\Project_1\Leaf\L_ScaleRandomly.h" />
+    <ClInclude Include="Source\Student\Project_1\Leaf\L_ScaleUp.h" />
     <ClInclude Include="Source\Student\Project_1\Leaf\L_SpeedUp.h" />
     <ClInclude Include="Source\Student\Project_1\Leaf\L_TiltPitch.h" />
     <ClInclude Include="Source\Student\Project_1\NodeHeaders.h" />
@@ -341,8 +344,10 @@
     <ClCompile Include="Source\Student\Project_1\ControlFlow\C_Sequencer.cpp" />
     <ClCompile Include="Source\Student\Project_1\Decorator\D_AlwaysTrue.cpp" />
     <ClCompile Include="Source\Student\Project_1\Decorator\D_Delay.cpp" />
+    <ClCompile Include="Source\Student\Project_1\Decorator\D_DelayFiveSeconds.cpp" />
     <ClCompile Include="Source\Student\Project_1\Decorator\D_InvertedRepeater.cpp" />
     <ClCompile Include="Source\Student\Project_1\Decorator\D_RepeatFourTimes.cpp" />
+    <ClCompile Include="Source\Student\Project_1\Decorator\D_RepeatTwoTimes.cpp" />
     <ClCompile Include="Source\Student\Project_1\Leaf\L_ChangeToRandomColor.cpp" />
     <ClCompile Include="Source\Student\Project_1\Leaf\L_CheckMouseClick.cpp" />
     <ClCompile Include="Source\Student\Project_1\Leaf\L_Idle.cpp" />
@@ -353,6 +358,7 @@
     <ClCompile Include="Source\Student\Project_1\Leaf\L_PlaySound.cpp" />
     <ClCompile Include="Source\Student\Project_1\Leaf\L_RotateYaw.cpp" />
     <ClCompile Include="Source\Student\Project_1\Leaf\L_ScaleRandomly.cpp" />
+    <ClCompile Include="Source\Student\Project_1\Leaf\L_ScaleUp.cpp" />
     <ClCompile Include="Source\Student\Project_1\Leaf\L_SpeedUp.cpp" />
     <ClCompile Include="Source\Student\Project_1\Leaf\L_TiltPitch.cpp" />
     <ClCompile Include="Source\Student\Project_1\Setup.cpp" />
