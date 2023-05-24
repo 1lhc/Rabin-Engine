@@ -30,6 +30,9 @@ void L_MoveToFurthestAgent::on_enter()
                 longestDistance = distance;
                 furthestPoint = agentPos;
                 targetFound = true;
+                agent->get_blackboard().set_value("Followed Color", a->get_color());
+                std::cout << "\n" << a->get_type() << "\n";
+                agent->get_blackboard().set_value("Followed NPC", a->get_type());
             }
         }
     }

@@ -29,3 +29,8 @@
 
 // Student Leaf Nodes
 #include "Leaf/L_ChangeToRandomColor.h"
+#include "Leaf/L_ScaleRandomly.h"
+#include "Leaf/L_RotateYaw.h"
+#include "Leaf/L_TiltPitch.h"
+#include "Leaf/L_JumpAway.h"
+#include "Leaf/L_SpeedUp.h"
