@@ -81,10 +81,13 @@ PathResult AStarPather::compute_path(PathRequest& request)
 	*/
 
 	// WRITE YOUR CODE HERE
-	//If(request.newRequest) {
-	//	Initialize everything.Clear Open / Closed Lists.
-	//		Push Start Node onto the Open List with cost of f(x) = g(x) + h(x).
-	//}
+	if (request.newRequest) {
+		//	Initialize everything.Clear Open / Closed Lists.
+		clear_all_nodes();
+		OpenList.clear();
+		//		Push Start Node onto the Open List with cost of f(x) = g(x) + h(x).
+
+	}
 	//While(Open List is not empty) {
 	//	parentNode = Pop cheapest node off Open List.
 	//		If parentNode is the Goal Node, then path found(return PathResult::COMPLETE).
