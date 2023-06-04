@@ -39,6 +39,9 @@ public:
 	std::vector<Node*> OpenList;
 
 	void push_node(Node* add);
-	void pop_node();
+	//void pop_node();
+	Node* popnode();
+
 	void update_node();
+	Node& find_node(GridPos pos);
 };

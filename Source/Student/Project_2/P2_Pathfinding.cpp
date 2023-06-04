@@ -21,6 +21,24 @@ bool ProjectTwo::implemented_jps_plus()
 
 bool AStarPather::initialize()
 {
+	//for (int i = 0; i < 40; ++i) {
+	//	MaxMap[i].gridPos.row = i;
+	//}
+
+
+	for (int x = 0; x < 40; ++x) {
+		for (int y = 0; y < 40; ++y) {
+			Node node;
+			node.gridPos.row = x;
+			node.gridPos.col = y;
+			node.nodeState = onList::Not;
+			node.givenCost = 0.f;
+			node.finalCost = 0.f;
+			node.parent = NULL;
+			MaxMap.push_back(node);
+			OriginalMap.push_back(node);
+		}
+	}
 	// handle any one-time setup requirements you have
 
 	/*
@@ -81,24 +99,45 @@ PathResult AStarPather::compute_path(PathRequest& request)
 	*/
 
 	// WRITE YOUR CODE HERE
+	GridPos start = terrain->get_grid_position(request.start);
+	GridPos goal = terrain->get_grid_position(request.goal);
 	if (request.newRequest) {
 		//	Initialize everything.Clear Open / Closed Lists.
 		clear_all_nodes();
 		OpenList.clear();
 		//		Push Start Node onto the Open List with cost of f(x) = g(x) + h(x).
+		//GridPos start = terrain->get_grid_position(request.start);
+		//GridPos goal = terrain->get_grid_position(request.goal);
+		//if (request.settings.heuristic == Heuristic::MANHATTAN) {
+		//	(find_node(start)).finalCost = goal.row - start.row + goal.col - start.col;
+		//}
 
+		switch (request.settings.heuristic) {
+		case Heuristic::MANHATTAN:
+			(find_node(start)).finalCost = static_cast<float>(goal.row - start.row + goal.col - start.col);
+			break;
+		default:
+			break;
+		}
+		push_node(&find_node(start));
 	}
-	//While(Open List is not empty) {
-	//	parentNode = Pop cheapest node off Open List.
-	//		If parentNode is the Goal Node, then path found(return PathResult::COMPLETE).
-	//		Place parentNode on the Closed List.
-	//		For(all valid neighboring child nodes of parentNode) {
-	//		Compute its cost, f(x) = g(x) + h(x)
-	//			If child node isn’t on Open or Closed list, put it on Open List.
-	//			Else if child node is on Open or Closed List, AND this new one is cheaper,
-	//			then take the old expensive one off both listsand put this new
-	//			cheaper one on the Open List.
-	//	}
+	while (!OpenList.empty()) {
+		//	parentNode = Pop cheapest node off Open List.
+		Node* parent = popnode();
+		//		If parentNode is the Goal Node, then path found(return PathResult::COMPLETE).
+		if (parent == &find_node(goal)) {
+			return PathResult::COMPLETE;
+		}
+		//		Place parentNode on the Closed List.
+		parent->nodeState = onList::Closed;
+		//		For(all valid neighboring child nodes of parentNode) {
+		 
+		//		Compute its cost, f(x) = g(x) + h(x)
+		//			If child node isn’t on Open or Closed list, put it on Open List.
+		//			Else if child node is on Open or Closed List, AND this new one is cheaper,
+		//			then take the old expensive one off both listsand put this new
+		//			cheaper one on the Open List.
+	}
 	//	If taken too much time this frame(or if request.settings.singleStep == true),
 	//		abort search for nowand resume next frame(return PathResult::PROCESSING).
 	//}
@@ -106,8 +145,8 @@ PathResult AStarPather::compute_path(PathRequest& request)
 
 
 	// Just sample code, safe to delete
-	GridPos start = terrain->get_grid_position(request.start);
-	GridPos goal = terrain->get_grid_position(request.goal);
+	//GridPos start = terrain->get_grid_position(request.start);
+	//GridPos goal = terrain->get_grid_position(request.goal);
 	terrain->set_color(start, Colors::Orange);
 	terrain->set_color(goal, Colors::Orange);
 	request.path.push_back(request.start);
@@ -118,18 +157,34 @@ PathResult AStarPather::compute_path(PathRequest& request)
 void AStarPather::clear_all_nodes()
 {
 	MaxMap = OriginalMap;
-
 }
 
 void AStarPather::push_node(Node* add)
 {
+	add->nodeState = onList::Open;
 	OpenList.push_back(add);
 }
 
-void AStarPather::pop_node()
+//void AStarPather::pop_node()
+//{
+//	int cheapestIndex = 0; 
+//	float cheapestValue = OpenList[0]->finalCost;  // Assume the first node is the cheapest
+//
+//	for (int i = 1; i < OpenList.size(); ++i) {
+//		if (OpenList[i]->finalCost < cheapestValue) {
+//			cheapestIndex = i;
+//			cheapestValue = OpenList[i]->finalCost;
+//		}
+//	}
+//	OpenList[cheapestIndex]->nodeState = onList::Closed;
+//	OpenList[cheapestIndex] = OpenList.back();
+//	OpenList.pop_back();
+//}
+
+AStarPather::Node* AStarPather::popnode()
 {
-	int cheapestIndex = 0;  // Assume the first node is the cheapest
-	float cheapestValue = OpenList[0]->finalCost;
+	int cheapestIndex = 0;
+	float cheapestValue = OpenList[0]->finalCost;  // Assume the first node is the cheapest
 
 	for (int i = 1; i < OpenList.size(); ++i) {
 		if (OpenList[i]->finalCost < cheapestValue) {
@@ -137,11 +192,20 @@ void AStarPather::pop_node()
 			cheapestValue = OpenList[i]->finalCost;
 		}
 	}
-
+	OpenList[cheapestIndex]->nodeState = onList::Closed;
+	Node* x = OpenList[cheapestIndex];
 	OpenList[cheapestIndex] = OpenList.back();
 	OpenList.pop_back();
+	return x;
 }
 
-void AStarPather::update_node()
+void AStarPather::update_node() {}
+
+AStarPather::Node& AStarPather::find_node(GridPos pos)
 {
+	for (Node x : MaxMap) {
+		if (x.gridPos == pos) {
+			return x;
+		}
+	}
 }
