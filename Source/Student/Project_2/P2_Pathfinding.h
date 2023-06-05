@@ -33,8 +33,6 @@ public:
 		Node() :parent{ NULL }, gridPos{ 0,0 }, finalCost{ 0.f }, givenCost{ 0.f }, nodeState{ onList::Not }{}
 	};
 
-
-
 	//std::vector<Node> MaxMap;
 	//std::vector<Node> OriginalMap;
 
@@ -50,7 +48,5 @@ public:
 	//void pop_node();
 	Node* popnode();
 
-	void update_node();
-	//Node* find_node(GridPos pos);
 	std::vector<Node*> getNeighbors(Node& parentNode);
 };
