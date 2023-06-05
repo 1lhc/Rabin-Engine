@@ -35,8 +35,10 @@ bool AStarPather::initialize()
 			node.givenCost = 0.f;
 			node.finalCost = 0.f;
 			node.parent = NULL;
-			MaxMap[x][y] = node;
 			OriginalMap[x][y] = node;
+			//node.validNeighbors = getNeighbors(node);
+			MaxMap[x][y] = node;
+
 			/*MaxMap.push_back(node);
 			OriginalMap.push_back(node);*/
 		}
@@ -107,27 +109,10 @@ PathResult AStarPather::compute_path(PathRequest& request)
 		//	Initialize everything.Clear Open / Closed Lists.
 		clear_all_nodes();
 		OpenList.clear();
-		//std::fill(std::begin(OpenList), std::end(OpenList), Node());
-		//		Push Start Node onto the Open List with cost of f(x) = g(x) + h(x).
-		//GridPos start = terrain->get_grid_position(request.start);
-		//GridPos goal = terrain->get_grid_position(request.goal);
-		//if (request.settings.heuristic == Heuristic::MANHATTAN) {
-		//	(find_node(start)).finalCost = goal.row - start.row + goal.col - start.col;
-		//}
-		Node start_node;
+		//	Push Start Node onto the Open List with cost of f(x) = g(x) + h(x).
+		Node start_node = MaxMap[start.row][start.col];
 		switch (request.settings.heuristic) {
-		case Heuristic::MANHATTAN:
-			/*for (Node x : MaxMap) {*/
-			for (auto& rows : MaxMap) // Iterating over rows
-			{
-				for (auto& elem : rows)
-				{
-					if (elem.gridPos == start) {
-						start_node = elem;
-					}
-				}
-			}
-			//}
+		case Heuristic::MANHATTAN:			
 			start_node.finalCost = static_cast<float>(goal.row - start.row + goal.col - start.col);
 			break;
 		default:
@@ -138,40 +123,51 @@ PathResult AStarPather::compute_path(PathRequest& request)
 	while (!OpenList.empty()) {
 		//	parentNode = Pop cheapest node off Open List.
 		Node* parent = popnode();
-		//		If parentNode is the Goal Node, then path found(return PathResult::COMPLETE).
+		//	If parentNode is the Goal Node, then path found(return PathResult::COMPLETE).
 		Node goal_node;
-		/*for (Node& x : MaxMap) {
-			if (x.gridPos == goal) {
-				goal_node = x;
+	
+		if (parent->gridPos == goal) {
+			while (parent->parent != NULL) {
+				request.path.push_front({ static_cast<float>(parent->gridPos.row), static_cast<float>(parent->gridPos.col), 0.f });
+				parent = parent->parent;
 			}
-		}*/
-
-		for (auto& rows : MaxMap) // Iterating over rows
-		{
-			for (auto& elem : rows)
-			{
-				if (elem.gridPos == goal) {
-					goal_node = elem;
-				}
-			}
-		}
-		if (parent == &goal_node) {
 			return PathResult::COMPLETE;
 		}
-		//		Place parentNode on the Closed List.
+		//	Place parentNode on the Closed List.
 		parent->nodeState = onList::Closed;
-		//		For(all valid neighboring child nodes of parentNode) {
+		terrain->set_color(parent->gridPos, Colors::Yellow);
+		//	For(all valid neighboring child nodes of parentNode) {
+		std::vector <Node*> validNeighbors = getNeighbors(*parent);
+		for (Node* x : validNeighbors) {
+			// Compute its cost, f(x) = g(x) + h(x)
+			float cost = parent->finalCost;
+			switch (request.settings.heuristic) {
+			case Heuristic::MANHATTAN:
+				cost += static_cast<float>(goal.row - x->gridPos.row + goal.col - x->gridPos.col);
+				break;
+			default:
+				break;
+			}
+			//	If child node isn’t on Open or Closed list, put it on Open List.
+			if (x->nodeState == onList::Not) {
+				x->nodeState = onList::Open;
+				terrain->set_color(x->gridPos, Colors::Blue);
 
-		//		Compute its cost, f(x) = g(x) + h(x)
-		//			If child node isn’t on Open or Closed list, put it on Open List.
-		//			Else if child node is on Open or Closed List, AND this new one is cheaper,
-		//			then take the old expensive one off both listsand put this new
-		//			cheaper one on the Open List.
+				push_node(x);
+			}
+			else if (cost < x->finalCost) { 	//	Else if child node is on Open or Closed List, AND this new one is cheaper,
+				x->finalCost = cost; 			//	then take the old expensive one off both lists and put this new
+				x->nodeState = onList::Open; 	//	cheaper one on the Open List.
+				terrain->set_color(x->gridPos, Colors::Blue);
+			}
+		}
+		//	If taken too much time this frame(or if request.settings.singleStep == true),
+		if (request.settings.singleStep == true) {
+			return PathResult::PROCESSING; // abort search for nowand resume next frame(return PathResult::PROCESSING).
+		}
 	}
-	//	If taken too much time this frame(or if request.settings.singleStep == true),
-	//		abort search for nowand resume next frame(return PathResult::PROCESSING).
-	//}
 	//Open List empty, thus no path possible(return PathResult::IMPOSSIBLE).
+	return PathResult::IMPOSSIBLE;
 
 
 	// Just sample code, safe to delete
@@ -179,9 +175,9 @@ PathResult AStarPather::compute_path(PathRequest& request)
 	//GridPos goal = terrain->get_grid_position(request.goal);
 	terrain->set_color(start, Colors::Orange);
 	terrain->set_color(goal, Colors::Orange);
-	request.path.push_back(request.start);
-	request.path.push_back(request.goal);
-	return PathResult::COMPLETE;
+	/*request.path.push_back(request.start);*/
+	/*request.path.push_back(request.goal);*/
+	//return PathResult::COMPLETE;
 }
 
 void AStarPather::clear_all_nodes()
@@ -192,6 +188,7 @@ void AStarPather::clear_all_nodes()
 
 void AStarPather::push_node(Node* add)
 {
+	terrain->set_color(add->gridPos, Colors::Blue);
 	add->nodeState = onList::Open;
 	OpenList.push_back(add);
 }
@@ -224,6 +221,7 @@ AStarPather::Node* AStarPather::popnode()
 		}
 	}
 	OpenList[cheapestIndex]->nodeState = onList::Closed;
+	terrain->set_color(OpenList[cheapestIndex]->gridPos, Colors::Yellow);
 	Node* x = OpenList[cheapestIndex];
 	OpenList[cheapestIndex] = OpenList.back();
 	OpenList.pop_back();
@@ -232,53 +230,69 @@ AStarPather::Node* AStarPather::popnode()
 
 void AStarPather::update_node() {}
 
-
-
 std::vector<AStarPather::Node*> AStarPather::getNeighbors(AStarPather::Node& parentNode) {
 	std::vector<AStarPather::Node*> neighbors;
 
-	// Logic to find and add valid neighboring nodes to the 'neighbors' vector
-	// This can include checking adjacent cells, edges, or any other relevant criteria
-	if (!terrain->is_wall(parentNode.gridPos.row, parentNode.gridPos.col - 1)) { // Mid Left Square
+	if (terrain->is_valid_grid_position(parentNode.gridPos.row, parentNode.gridPos.col - 1) &&
+		!terrain->is_wall(parentNode.gridPos.row, parentNode.gridPos.col - 1)) { // Mid Left Square
 		neighbors.push_back(&MaxMap[parentNode.gridPos.row][parentNode.gridPos.col - 1]);
 	}
 
-	if (!terrain->is_wall(parentNode.gridPos.row, parentNode.gridPos.col + 1)) { // Mid Right Square
+	if (terrain->is_valid_grid_position(parentNode.gridPos.row, parentNode.gridPos.col + 1) &&
+		!terrain->is_wall(parentNode.gridPos.row, parentNode.gridPos.col + 1)) { // Mid Right Square
 		neighbors.push_back(&MaxMap[parentNode.gridPos.row][parentNode.gridPos.col + 1]);
 	}
 
-	if (!terrain->is_wall(parentNode.gridPos.row + 1, parentNode.gridPos.col)) { // Mid Top Square
+	if (terrain->is_valid_grid_position(parentNode.gridPos.row + 1, parentNode.gridPos.col) &&
+		!terrain->is_wall(parentNode.gridPos.row + 1, parentNode.gridPos.col)) { // Mid Top Square
 		neighbors.push_back(&MaxMap[parentNode.gridPos.row + 1][parentNode.gridPos.col - 1]);
 	}
 
-	if (!terrain->is_wall(parentNode.gridPos.row - 1, parentNode.gridPos.col)) { // Mid Bottom Square
+	if (terrain->is_valid_grid_position(parentNode.gridPos.row - 1, parentNode.gridPos.col) &&
+		!terrain->is_wall(parentNode.gridPos.row - 1, parentNode.gridPos.col)) { // Mid Bottom Square
 		neighbors.push_back(&MaxMap[parentNode.gridPos.row - 1][parentNode.gridPos.col - 1]);
 	}
 
 	// Diagonals (First check diagonal itself, then 2 beside)
-	if (!terrain->is_wall(parentNode.gridPos.row + 1, parentNode.gridPos.col - 1)) { // Top Left Square
-		if (!terrain->is_wall(parentNode.gridPos.row + 1, parentNode.gridPos.col) && // Top Mid Square
+	if (terrain->is_valid_grid_position(parentNode.gridPos.row + 1, parentNode.gridPos.col - 1) &&
+		!terrain->is_wall(parentNode.gridPos.row + 1, parentNode.gridPos.col - 1)) { // Top Left Square
+
+		if (terrain->is_valid_grid_position(parentNode.gridPos.row + 1, parentNode.gridPos.col) &&
+			terrain->is_valid_grid_position(parentNode.gridPos.row, parentNode.gridPos.col - 1) &&
+			!terrain->is_wall(parentNode.gridPos.row + 1, parentNode.gridPos.col) && // Top Mid Square
 			!terrain->is_wall(parentNode.gridPos.row, parentNode.gridPos.col - 1)) {
 			neighbors.push_back(&MaxMap[parentNode.gridPos.row + 1][parentNode.gridPos.col - 1]);
 		}
 	}
 
-	if (!terrain->is_wall(parentNode.gridPos.row + 1, parentNode.gridPos.col + 1)) { // Top Right Square
-		if (!terrain->is_wall(parentNode.gridPos.row + 1, parentNode.gridPos.col) && // Top Mid Square
+	if (terrain->is_valid_grid_position(parentNode.gridPos.row + 1, parentNode.gridPos.col + 1) &&
+		!terrain->is_wall(parentNode.gridPos.row + 1, parentNode.gridPos.col + 1)) { // Top Right Square
+
+		if (terrain->is_valid_grid_position(parentNode.gridPos.row + 1, parentNode.gridPos.col) &&
+			terrain->is_valid_grid_position(parentNode.gridPos.row, parentNode.gridPos.col + 1) &&
+			!terrain->is_wall(parentNode.gridPos.row + 1, parentNode.gridPos.col) && // Top Mid Square
 			!terrain->is_wall(parentNode.gridPos.row, parentNode.gridPos.col + 1)) {
 			neighbors.push_back(&MaxMap[parentNode.gridPos.row + 1][parentNode.gridPos.col + 1]);
 		}
 	}
 
-	if (!terrain->is_wall(parentNode.gridPos.row - 1, parentNode.gridPos.col + 1)) { // Bottom Right Square
-		if (!terrain->is_wall(parentNode.gridPos.row - 1, parentNode.gridPos.col) && // Bottom Mid Square
+	if (terrain->is_valid_grid_position(parentNode.gridPos.row - 1, parentNode.gridPos.col + 1) &&
+		!terrain->is_wall(parentNode.gridPos.row - 1, parentNode.gridPos.col + 1)) { // Bottom Right Square
+
+		if (terrain->is_valid_grid_position(parentNode.gridPos.row - 1, parentNode.gridPos.col) &&
+			terrain->is_valid_grid_position(parentNode.gridPos.row, parentNode.gridPos.col + 1) &&
+			!terrain->is_wall(parentNode.gridPos.row - 1, parentNode.gridPos.col) && // Bottom Mid Square
 			!terrain->is_wall(parentNode.gridPos.row, parentNode.gridPos.col + 1)) {
 			neighbors.push_back(&MaxMap[parentNode.gridPos.row - 1][parentNode.gridPos.col + 1]);
 		}
 	}
 
-	if (!terrain->is_wall(parentNode.gridPos.row - 1, parentNode.gridPos.col - 1)) { // Bottom Left Square
-		if (!terrain->is_wall(parentNode.gridPos.row - 1, parentNode.gridPos.col) && // Bottom Mid Square
+	if (terrain->is_valid_grid_position(parentNode.gridPos.row - 1, parentNode.gridPos.col - 1) &&
+		!terrain->is_wall(parentNode.gridPos.row - 1, parentNode.gridPos.col - 1)) { // Bottom Left Square
+
+		if (terrain->is_valid_grid_position(parentNode.gridPos.row - 1, parentNode.gridPos.col) &&
+			terrain->is_valid_grid_position(parentNode.gridPos.row, parentNode.gridPos.col - 1) &&
+			!terrain->is_wall(parentNode.gridPos.row - 1, parentNode.gridPos.col) && // Bottom Mid Square
 			!terrain->is_wall(parentNode.gridPos.row, parentNode.gridPos.col - 1)) {
 			neighbors.push_back(&MaxMap[parentNode.gridPos.row - 1][parentNode.gridPos.col - 1]);
 		}
