@@ -111,6 +111,9 @@ PathResult AStarPather::compute_path(PathRequest& request)
 		OpenList.clear();
 		//	Push Start Node onto the Open List with cost of f(x) = g(x) + h(x).
 		Node start_node = MaxMap[start.row][start.col];
+		start_node.parent = NULL;
+		start_node.givenCost = 0.f;
+		
 		switch (request.settings.heuristic) {
 		case Heuristic::MANHATTAN:
 			start_node.finalCost = static_cast<float>(goal.row - start.row + goal.col - start.col);
