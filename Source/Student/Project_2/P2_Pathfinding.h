@@ -29,23 +29,17 @@ public:
 		float finalCost;		// Final cost f(x)
 		float givenCost;		// Given cost g(x)
 		onList nodeState;		// On open/closed list?
-		//std::vector<Node*> validNeighbors;
 		Node() :parent{ nullptr }, gridPos{ 0,0 }, finalCost{ 0.f }, givenCost{ 0.f }, nodeState{ onList::Not }{}
 	};
-
-	//std::vector<Node> MaxMap;
-	//std::vector<Node> OriginalMap;
 
 	Node MaxMap[40][40];
 	Node OriginalMap[40][40];
 
 	void clear_all_nodes();
 
-	//Node* OpenList[40][40];
 	std::vector<Node*> OpenList;
 
 	void push_node(Node* add);
-	//void pop_node();
 	Node* popnode();
 
 	std::vector<Node*> getNeighbors(Node& parentNode);

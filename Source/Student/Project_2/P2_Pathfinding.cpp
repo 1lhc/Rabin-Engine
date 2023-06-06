@@ -2,6 +2,8 @@
 #include "Projects/ProjectTwo.h"
 #include "P2_Pathfinding.h"
 
+constexpr float sqrttwo = 1.414214f;
+
 #pragma region Extra Credit
 bool ProjectTwo::implemented_floyd_warshall()
 {
@@ -21,11 +23,6 @@ bool ProjectTwo::implemented_jps_plus()
 
 bool AStarPather::initialize()
 {
-	//for (int i = 0; i < 40; ++i) {
-	//	MaxMap[i].gridPos.row = i;
-	//}
-
-
 	for (int x = 0; x < 40; ++x) {
 		for (int y = 0; y < 40; ++y) {
 			Node node;
@@ -36,11 +33,7 @@ bool AStarPather::initialize()
 			node.finalCost = 0.f;
 			node.parent = nullptr;
 			OriginalMap[x][y] = node;
-			//node.validNeighbors = getNeighbors(node);
 			MaxMap[x][y] = node;
-
-			/*MaxMap.push_back(node);
-			OriginalMap.push_back(node);*/
 		}
 	}
 	// handle any one-time setup requirements you have
@@ -130,6 +123,7 @@ PathResult AStarPather::compute_path(PathRequest& request)
 		}
 		//	Place parentNode on the Closed List.
 		parent->nodeState = onList::Closed;
+		terrain->set_color(parent->gridPos, Colors::Yellow);
 
 		std::vector <Node*> validNeighbors = getNeighbors(*parent);
 		for (Node* x : validNeighbors) { //	For(all valid neighboring child nodes of parentNode) {
@@ -160,18 +154,7 @@ PathResult AStarPather::compute_path(PathRequest& request)
 		}
 	}
 	//Open List empty, thus no path possible(return PathResult::IMPOSSIBLE).
-	//std::cout << "IMPOSSIBLE ";
 	return PathResult::IMPOSSIBLE;
-
-
-	// Just sample code, safe to delete
-	//GridPos start = terrain->get_grid_position(request.start);
-	//GridPos goal = terrain->get_grid_position(request.goal);
-	/*terrain->set_color(start, Colors::Orange);
-	terrain->set_color(goal, Colors::Orange);*/
-	/*request.path.push_back(request.start);*/
-	/*request.path.push_back(request.goal);*/
-	//return PathResult::COMPLETE;
 }
 
 void AStarPather::clear_all_nodes()
@@ -202,7 +185,6 @@ AStarPather::Node* AStarPather::popnode()
 	Node* ToReturn = &MaxMap[OpenList[cheapestIndex]->gridPos.row][OpenList[cheapestIndex]->gridPos.col];
 	MaxMap[OpenList[cheapestIndex]->gridPos.row][OpenList[cheapestIndex]->gridPos.col].nodeState = onList::Closed;
 	OpenList.erase(OpenList.begin() + cheapestIndex);
-	terrain->set_color(ToReturn->gridPos, Colors::Yellow);
 
 	return ToReturn;
 }
@@ -288,7 +270,7 @@ std::vector<AStarPather::Node*> AStarPather::getNeighbors(AStarPather::Node& par
 
 float AStarPather::ApplyManhanttan(GridPos start, GridPos goal)
 {
-	float x = static_cast<float> (fabs(goal.row - start.row + goal.col - start.col));
+	float x = static_cast<float> (fabs(goal.row - start.row) + fabs(goal.col - start.col));
 	return x;
 }
 
@@ -322,14 +304,14 @@ float AStarPather::CalculateHeuristic(Heuristic hType, GridPos childNode, GridPo
 		return 0;
 		break;
 	case Heuristic::OCTILE:
-		return static_cast<float>(fabs(std::min((childNode.col - goal.col), (childNode.row - goal.row)) *
-			1.41421356237f + std::max((childNode.col - goal.col), (childNode.row - goal.row)) -
-			std::min((childNode.col - goal.col), (childNode.row - goal.row))));
+		return static_cast<float>(std::min(fabs(childNode.col - goal.col), fabs(childNode.row - goal.row) *
+			sqrttwo + std::max(fabs(childNode.col - goal.col), fabs(childNode.row - goal.row)) -
+			std::min(fabs(childNode.col - goal.col), fabs(childNode.row - goal.row))));
 		break;
 	default:
-		return static_cast<float>(fabs(std::min((childNode.col - goal.col), (childNode.row - goal.row)) *
-			1.41421356237f + std::max((childNode.col - goal.col), (childNode.row - goal.row)) -
-			std::min((childNode.col - goal.col), (childNode.row - goal.row))));
+		return static_cast<float>(std::min(fabs(childNode.col - goal.col), fabs(childNode.row - goal.row) *
+			sqrttwo + std::max(fabs(childNode.col - goal.col), fabs(childNode.row - goal.row)) -
+			std::min(fabs(childNode.col - goal.col), fabs(childNode.row - goal.row))));
 		break;
 	}
 }
