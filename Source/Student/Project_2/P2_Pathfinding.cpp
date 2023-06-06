@@ -23,8 +23,9 @@ bool ProjectTwo::implemented_jps_plus()
 
 bool AStarPather::initialize()
 {
-	for (int x = 0; x < 40; ++x) {
-		for (int y = 0; y < 40; ++y) {
+	//terrain->get_map_height()
+	for (int x = 0; x < terrain->get_map_width(); ++x) {
+		for (int y = 0; y < terrain->get_map_height(); ++y) {
 			Node node;
 			node.gridPos.row = x;
 			node.gridPos.col = y;
@@ -32,8 +33,12 @@ bool AStarPather::initialize()
 			node.givenCost = 0.f;
 			node.finalCost = 0.f;
 			node.parent = nullptr;
+			node.validNeighbors = getNeighbors(node);
+			/*Callback cb = std::bind(&AStarPather::getNeighbors, node);
+			Messenger::listen_for_message(Messages::MAP_CHANGE, cb);*/
 			OriginalMap[x][y] = node;
 			MaxMap[x][y] = node;
+
 		}
 	}
 	// handle any one-time setup requirements you have
@@ -49,6 +54,7 @@ bool AStarPather::initialize()
 		Callback is just a typedef for std::function<void(void)>, so any std::invoke'able
 		object that std::function can wrap will suffice.
 	*/
+	
 
 	return true; // return false if any errors actually occur, to stop engine initialization
 }
@@ -125,8 +131,8 @@ PathResult AStarPather::compute_path(PathRequest& request)
 		parent->nodeState = onList::Closed;
 		terrain->set_color(parent->gridPos, Colors::Yellow);
 
-		std::vector <Node*> validNeighbors = getNeighbors(*parent);
-		for (Node* x : validNeighbors) { //	For(all valid neighboring child nodes of parentNode) {
+		//std::vector <Node*> validNeighbors = getNeighbors(*parent);
+		for (Node* x : parent->validNeighbors) { //	For(all valid neighboring child nodes of parentNode) {
 			// Compute its cost, f(x) = g(x) + h(x)
 			float gx = parent->givenCost + BlockDistance(x->gridPos, parent->gridPos);
 			float fx = gx + CalculateHeuristic(request.settings.heuristic, x->gridPos, goal) * request.settings.weight;
