@@ -165,15 +165,15 @@ void AStarPather::clear_all_nodes()
 	//memcpy(MaxMap, OriginalMap, sizeof(OriginalMap));
 	for (int x = 0; x < 40; ++x) {
 		for (int y = 0; y < 40; ++y) {
-			Node node;
-			node.gridPos.row = x;
-			node.gridPos.col = y;
-			node.nodeState = onList::Not;
-			node.givenCost = 0.f;
-			node.finalCost = 0.f;
-			node.parent = nullptr;
+			/*Node node;*/
+			/*node.gridPos.row = x;
+			node.gridPos.col = y;*/
+			MaxMap[x][y].nodeState = onList::Not;
+			MaxMap[x][y].givenCost = 0.f;
+			MaxMap[x][y].finalCost = 0.f;
+			MaxMap[x][y].parent = nullptr;
 			//OriginalMap[x][y] = node;
-			MaxMap[x][y] = node;
+			/*MaxMap[x][y] = node;*/
 		}
 	}
 
