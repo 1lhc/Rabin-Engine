@@ -32,7 +32,7 @@ bool AStarPather::initialize()
 			node.givenCost = 0.f;
 			node.finalCost = 0.f;
 			node.parent = nullptr;
-			OriginalMap[x][y] = node;
+			//OriginalMap[x][y] = node;
 			MaxMap[x][y] = node;
 		}
 	}
@@ -49,6 +49,8 @@ bool AStarPather::initialize()
 		Callback is just a typedef for std::function<void(void)>, so any std::invoke'able
 		object that std::function can wrap will suffice.
 	*/
+	/*Callback cb = std::bind(&AStarPather::your_function_name, this);
+	Messenger::listen_for_message(Messages::MAP_CHANGE, cb);*/
 
 	return true; // return false if any errors actually occur, to stop engine initialization
 }
@@ -160,7 +162,21 @@ PathResult AStarPather::compute_path(PathRequest& request)
 void AStarPather::clear_all_nodes()
 {
 	//MaxMap = OriginalMap;
-	memcpy(MaxMap, OriginalMap, sizeof(OriginalMap));
+	//memcpy(MaxMap, OriginalMap, sizeof(OriginalMap));
+	for (int x = 0; x < 40; ++x) {
+		for (int y = 0; y < 40; ++y) {
+			Node node;
+			node.gridPos.row = x;
+			node.gridPos.col = y;
+			node.nodeState = onList::Not;
+			node.givenCost = 0.f;
+			node.finalCost = 0.f;
+			node.parent = nullptr;
+			//OriginalMap[x][y] = node;
+			MaxMap[x][y] = node;
+		}
+	}
+
 }
 
 void AStarPather::push_node(Node* add)

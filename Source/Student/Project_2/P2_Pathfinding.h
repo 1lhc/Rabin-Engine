@@ -33,7 +33,7 @@ public:
 	};
 
 	Node MaxMap[40][40];
-	Node OriginalMap[40][40];
+	//Node OriginalMap[40][40];
 
 	void clear_all_nodes();
 
