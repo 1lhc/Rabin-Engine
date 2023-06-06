@@ -160,7 +160,7 @@ PathResult AStarPather::compute_path(PathRequest& request)
 		}
 	}
 	//Open List empty, thus no path possible(return PathResult::IMPOSSIBLE).
-	std::cout << "IMPOSSIBLE ";
+	//std::cout << "IMPOSSIBLE ";
 	return PathResult::IMPOSSIBLE;
 
 
@@ -323,15 +323,13 @@ float AStarPather::CalculateHeuristic(Heuristic hType, GridPos childNode, GridPo
 		break;
 	case Heuristic::OCTILE:
 		return static_cast<float>(fabs(std::min((childNode.col - goal.col), (childNode.row - goal.row)) *
-			sqrt(2) + std::max((childNode.col - goal.col), (childNode.row - goal.row)) -
+			1.41421356237f + std::max((childNode.col - goal.col), (childNode.row - goal.row)) -
 			std::min((childNode.col - goal.col), (childNode.row - goal.row))));
 		break;
 	default:
 		return static_cast<float>(fabs(std::min((childNode.col - goal.col), (childNode.row - goal.row)) *
-			sqrt(2) + std::max((childNode.col - goal.col), (childNode.row - goal.row)) -
+			1.41421356237f + std::max((childNode.col - goal.col), (childNode.row - goal.row)) -
 			std::min((childNode.col - goal.col), (childNode.row - goal.row))));
 		break;
 	}
-
-
 }
