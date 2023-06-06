@@ -115,9 +115,41 @@ PathResult AStarPather::compute_path(PathRequest& request)
 
 		//	If parentNode is the Goal Node, then path found(return PathResult::COMPLETE).	
 		if (parent->gridPos == goal) {
-			while (parent != nullptr) {
-				request.path.push_front(terrain->get_world_position(parent->gridPos));
-				parent = parent->parent;
+			if (request.settings.rubberBanding) {
+				std::deque<Node*> path;
+				Node* current = &MaxMap[goal.row][goal.col];
+				while (current != nullptr) {
+					path.push_back(current);
+					current = current->parent;
+					std::cout << "STUCK HERE\n";
+				}
+				std::vector<Node*> rubberbandedPath;
+				rubberbandedPath.push_back(path.back());  // Add the goal node
+				for (size_t i = path.size() - 2; i > 0; --i) {
+					Node* prev = path[i - 1];
+					Node* current = path[i];
+					Node* next = path[i + 1];
+					std::cout << "LUCK\n";
+					// Check if the current node can be skipped
+					if (!isObstacleBetween(prev, next)) {
+						rubberbandedPath.push_back(current);
+					}
+				}
+				std::cout << "SPACE\n";
+				rubberbandedPath.push_back(path.front());  // Add the start node
+				std::cout << "RUBBERBANDING\n";
+				// Reverse the path to get the correct order
+				std::reverse(rubberbandedPath.begin(), rubberbandedPath.end());
+				for (Node* x : rubberbandedPath) {
+					std::cout << "PATH TRACING\n";
+					request.path.push_front(terrain->get_world_position(x->gridPos));
+				}				
+			}
+			else {
+				while (parent != nullptr) {
+					request.path.push_front(terrain->get_world_position(parent->gridPos));
+					parent = parent->parent;
+				}
 			}
 			return PathResult::COMPLETE;
 		}
@@ -315,3 +347,59 @@ float AStarPather::CalculateHeuristic(Heuristic hType, GridPos childNode, GridPo
 		break;
 	}
 }
+
+bool AStarPather::isObstacleBetween(Node* prev, Node* next) {
+	// Check if there is an obstacle between the two nodes
+
+	// Calculate the delta x and delta y between the nodes
+	int dx = next->gridPos.row - prev->gridPos.row;
+	int dy = next->gridPos.col - prev->gridPos.col;
+
+	// Determine the increments for x and y
+	int xStep = (dx > 0) ? 1 : -1;
+	int yStep = (dy > 0) ? 1 : -1;
+
+	// Calculate the absolute values of delta x and delta y
+	int absDx = abs(dx);
+	int absDy = abs(dy);
+
+	// Calculate the error values for each axis
+	int errorX = absDy - absDx;
+	int errorY = absDx - absDy;
+
+	// Start from the previous node
+	int x = prev->gridPos.row;
+	int y = prev->gridPos.col;
+
+	// Iterate along the line between the two nodes
+	while (x != next->gridPos.row || y != next->gridPos.col) {
+		// Check if the current position is an obstacle
+		if (!terrain->is_valid_grid_position(x,y) || terrain->is_wall(x, y) ) {
+			return true;  // Obstacle found
+		}
+
+		// Update the error values
+		int errorX2 = errorX * 2;
+		int errorY2 = errorY * 2;
+
+		// Move along the x-axis
+		if (errorX2 > -absDy) {
+			errorX -= absDy;
+			x += xStep;
+		}
+
+		// Move along the y-axis
+		if (errorY2 > -absDx) {
+			errorY -= absDx;
+			y += yStep;
+		}
+
+		// Check if the current position is an obstacle
+		if (!terrain->is_valid_grid_position(x, y) || terrain->is_wall(x, y)) {
+			return true;  // Obstacle found
+		}
+	}
+
+	return false;  // No obstacles found
+}
+
