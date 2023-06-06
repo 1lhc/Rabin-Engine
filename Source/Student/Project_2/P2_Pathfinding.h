@@ -49,4 +49,10 @@ public:
 	Node* popnode();
 
 	std::vector<Node*> getNeighbors(Node& parentNode);
+	float ApplyManhanttan(GridPos start, GridPos goal);
+	float ApplyChebyshev(GridPos start, GridPos goal);
+
+	float BlockDistance(GridPos childNode, GridPos parent);
+
+	float CalculateHeuristic(Heuristic hType, GridPos childNode, GridPos goal);
 };
