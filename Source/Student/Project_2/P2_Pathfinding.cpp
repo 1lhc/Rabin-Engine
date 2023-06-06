@@ -110,21 +110,10 @@ PathResult AStarPather::compute_path(PathRequest& request)
 		clear_all_nodes();
 		OpenList.clear();
 		//	Push Start Node onto the Open List with cost of f(x) = g(x) + h(x).
-		//Node* start_node = &MaxMap[start.row][start.col];
 		MaxMap[start.row][start.col].parent = nullptr;
 		MaxMap[start.row][start.col].givenCost = 0.f;
-		
+		MaxMap[start.row][start.col].finalCost = CalculateHeuristic(request.settings.heuristic, MaxMap[start.row][start.col].gridPos, goal) * request.settings.weight;
 
-		MaxMap[start.row][start.col].finalCost =  CalculateHeuristic(request.settings.heuristic, MaxMap[start.row][start.col].gridPos, goal) * request.settings.weight;
-
-		//switch (request.settings.heuristic) {
-		//case Heuristic::MANHATTAN:
-		//	MaxMap[start.row][start.col].finalCost = ApplyManhanttan(start, goal);
-		//	//start_node->finalCost = static_cast<float>(goal.row - start.row + goal.col - start.col);
-		//	break;
-		//default:
-		//	break;
-		//}
 		push_node(&MaxMap[start.row][start.col]);
 	}
 	while (!OpenList.empty()) {
@@ -135,9 +124,7 @@ PathResult AStarPather::compute_path(PathRequest& request)
 		if (parent->gridPos == goal) {
 			while (parent != nullptr) {
 				std::cout << parent->gridPos.row << " col:" << parent->gridPos.col << "\n";
-				//request.path.push_front({ static_cast<float>(parent->gridPos.row), static_cast<float>(parent->gridPos.col), request.goal.z });
 				request.path.push_front(terrain->get_world_position(parent->gridPos));
-
 				parent = parent->parent;
 				std::cout << "TRACING ";
 			}
@@ -160,22 +147,19 @@ PathResult AStarPather::compute_path(PathRequest& request)
 			// float cost = parent->finalCost; // 3.
 			float gx = parent->givenCost + BlockDistance(x->gridPos, parent->gridPos);
 			float fx = gx + CalculateHeuristic(request.settings.heuristic, x->gridPos, goal) * request.settings.weight;
-			//switch (request.settings.heuristic) {
-			//case Heuristic::MANHATTAN:
-			//	//cost += static_cast<float>(goal.row - x->gridPos.row + goal.col - x->gridPos.col);
-			//	cost += ApplyManhanttan(x->gridPos, goal);
-			//	break;
-			//default:
-			//	break;
-			//}
+
 			//	If child node isn’t on Open or Closed list, put it on Open List.
 			if (x->nodeState == onList::Not) {
 				/*x->nodeState = onList::Open;*/
+				x->parent = parent;
 				x->finalCost = fx;
+				x->givenCost = gx;
 				push_node(x);
 				//terrain->set_color(x->gridPos, Colors::Blue);
 			}
 			else if (fx < x->finalCost) { 			//	Else if child node is on Open or Closed List, AND this new one is cheaper,
+				x->parent = parent;
+				x->givenCost = gx;
 				x->finalCost = fx; 					//	then take the old expensive one off both lists and put this new
 				if (x->nodeState == onList::Closed) {	//	cheaper one on the Open List.
 					x->nodeState = onList::Open;
@@ -185,8 +169,6 @@ PathResult AStarPather::compute_path(PathRequest& request)
 		}
 		//	If taken too much time this frame(or if request.settings.singleStep == true),
 		if (request.settings.singleStep == true) {
-			////std::cout << request.goal.x << " y:" << request.goal.y <<" z:" << request.goal.z << "\n";
-			//std::cout << "PROCESSING ";
 			return PathResult::PROCESSING; // abort search for nowand resume next frame(return PathResult::PROCESSING).
 		}
 	}
@@ -249,26 +231,26 @@ std::vector<AStarPather::Node*> AStarPather::getNeighbors(AStarPather::Node& par
 
 	if (terrain->is_valid_grid_position(parentNode.gridPos.row, parentNode.gridPos.col - 1) &&
 		!terrain->is_wall(parentNode.gridPos.row, parentNode.gridPos.col - 1)) { // Mid Left Square
-		MaxMap[parentNode.gridPos.row][parentNode.gridPos.col - 1].parent = &parentNode;
+		//MaxMap[parentNode.gridPos.row][parentNode.gridPos.col - 1].parent = &parentNode;
 		neighbors.push_back(&MaxMap[parentNode.gridPos.row][parentNode.gridPos.col - 1]);
 	}
 
 	if (terrain->is_valid_grid_position(parentNode.gridPos.row, parentNode.gridPos.col + 1) &&
 		!terrain->is_wall(parentNode.gridPos.row, parentNode.gridPos.col + 1)) { // Mid Right Square
-		MaxMap[parentNode.gridPos.row][parentNode.gridPos.col + 1].parent = &parentNode;
+		/*MaxMap[parentNode.gridPos.row][parentNode.gridPos.col + 1].parent = &parentNode;*/
 		neighbors.push_back(&MaxMap[parentNode.gridPos.row][parentNode.gridPos.col + 1]);
 	}
 
 	if (terrain->is_valid_grid_position(parentNode.gridPos.row + 1, parentNode.gridPos.col) &&
 		!terrain->is_wall(parentNode.gridPos.row + 1, parentNode.gridPos.col)) { // Mid Top Square
-		MaxMap[parentNode.gridPos.row + 1][parentNode.gridPos.col].parent = &parentNode;
+		//MaxMap[parentNode.gridPos.row + 1][parentNode.gridPos.col].parent = &parentNode;
 		neighbors.push_back(&MaxMap[parentNode.gridPos.row + 1][parentNode.gridPos.col]);
 	}
 
 	if (terrain->is_valid_grid_position(parentNode.gridPos.row - 1, parentNode.gridPos.col) &&
 		!terrain->is_wall(parentNode.gridPos.row - 1, parentNode.gridPos.col)) { // Mid Bottom Square
-		MaxMap[parentNode.gridPos.row - 1][parentNode.gridPos.col].parent = &parentNode;
-		MaxMap[parentNode.gridPos.row - 1][parentNode.gridPos.col].givenCost += 1.f;
+		//MaxMap[parentNode.gridPos.row - 1][parentNode.gridPos.col].parent = &parentNode;
+		//MaxMap[parentNode.gridPos.row - 1][parentNode.gridPos.col].givenCost += 1.f;
 		neighbors.push_back(&MaxMap[parentNode.gridPos.row - 1][parentNode.gridPos.col]);
 	}
 
@@ -281,7 +263,7 @@ std::vector<AStarPather::Node*> AStarPather::getNeighbors(AStarPather::Node& par
 			!terrain->is_wall(parentNode.gridPos.row + 1, parentNode.gridPos.col) && // Top Mid Square
 			!terrain->is_wall(parentNode.gridPos.row, parentNode.gridPos.col - 1)) {
 
-			MaxMap[parentNode.gridPos.row + 1][parentNode.gridPos.col - 1].parent = &parentNode;
+			//MaxMap[parentNode.gridPos.row + 1][parentNode.gridPos.col - 1].parent = &parentNode;
 			neighbors.push_back(&MaxMap[parentNode.gridPos.row + 1][parentNode.gridPos.col - 1]);
 		}
 	}
@@ -294,7 +276,7 @@ std::vector<AStarPather::Node*> AStarPather::getNeighbors(AStarPather::Node& par
 			!terrain->is_wall(parentNode.gridPos.row + 1, parentNode.gridPos.col) && // Top Mid Square
 			!terrain->is_wall(parentNode.gridPos.row, parentNode.gridPos.col + 1)) {
 
-			MaxMap[parentNode.gridPos.row + 1][parentNode.gridPos.col + 1].parent = &parentNode;
+			//MaxMap[parentNode.gridPos.row + 1][parentNode.gridPos.col + 1].parent = &parentNode;
 			neighbors.push_back(&MaxMap[parentNode.gridPos.row + 1][parentNode.gridPos.col + 1]);
 		}
 	}
@@ -307,7 +289,7 @@ std::vector<AStarPather::Node*> AStarPather::getNeighbors(AStarPather::Node& par
 			!terrain->is_wall(parentNode.gridPos.row - 1, parentNode.gridPos.col) && // Bottom Mid Square
 			!terrain->is_wall(parentNode.gridPos.row, parentNode.gridPos.col + 1)) {
 
-			MaxMap[parentNode.gridPos.row - 1][parentNode.gridPos.col + 1].parent = &parentNode;
+			//MaxMap[parentNode.gridPos.row - 1][parentNode.gridPos.col + 1].parent = &parentNode;
 			neighbors.push_back(&MaxMap[parentNode.gridPos.row - 1][parentNode.gridPos.col + 1]);
 		}
 	}
@@ -320,7 +302,7 @@ std::vector<AStarPather::Node*> AStarPather::getNeighbors(AStarPather::Node& par
 			!terrain->is_wall(parentNode.gridPos.row - 1, parentNode.gridPos.col) && // Bottom Mid Square
 			!terrain->is_wall(parentNode.gridPos.row, parentNode.gridPos.col - 1)) {
 
-			MaxMap[parentNode.gridPos.row - 1][parentNode.gridPos.col - 1].parent = &parentNode;
+			//MaxMap[parentNode.gridPos.row - 1][parentNode.gridPos.col - 1].parent = &parentNode;
 			neighbors.push_back(&MaxMap[parentNode.gridPos.row - 1][parentNode.gridPos.col - 1]);
 		}
 	}
@@ -331,18 +313,18 @@ std::vector<AStarPather::Node*> AStarPather::getNeighbors(AStarPather::Node& par
 float AStarPather::ApplyManhanttan(GridPos start, GridPos goal)
 {
 	float x = static_cast<float> (abs(goal.row - start.row + goal.col - start.col));
-		return x;
+	return x;
 }
 
 float AStarPather::ApplyChebyshev(GridPos start, GridPos goal)
 {
-	return static_cast<float>(std::max(abs(goal.row - start.row) , abs(goal.col - start.col)));
+	return static_cast<float>(std::max(abs(goal.row - start.row), abs(goal.col - start.col)));
 }
 
 float AStarPather::BlockDistance(GridPos childNode, GridPos parent)
 {
-	return static_cast<float>(sqrt((childNode.row-parent.row)* (childNode.row - parent.row) + 
-		(childNode.col-parent.col)* (childNode.col - parent.col)));
+	return static_cast<float>(sqrt((childNode.row - parent.row) * (childNode.row - parent.row) +
+		(childNode.col - parent.col) * (childNode.col - parent.col)));
 }
 
 float AStarPather::CalculateHeuristic(Heuristic hType, GridPos childNode, GridPos goal)
@@ -356,5 +338,5 @@ float AStarPather::CalculateHeuristic(Heuristic hType, GridPos childNode, GridPo
 		break;
 	}
 
-	return 0.0f;
+	return 1.0f;
 }

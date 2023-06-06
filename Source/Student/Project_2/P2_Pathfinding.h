@@ -30,7 +30,7 @@ public:
 		float givenCost;		// Given cost g(x)
 		onList nodeState;		// On open/closed list?
 		//std::vector<Node*> validNeighbors;
-		Node() :parent{ NULL }, gridPos{ 0,0 }, finalCost{ 0.f }, givenCost{ 0.f }, nodeState{ onList::Not }{}
+		Node() :parent{ nullptr }, gridPos{ 0,0 }, finalCost{ 0.f }, givenCost{ 0.f }, nodeState{ onList::Not }{}
 	};
 
 	//std::vector<Node> MaxMap;
