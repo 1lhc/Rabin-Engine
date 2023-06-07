@@ -138,35 +138,33 @@ PathResult AStarPather::compute_path(PathRequest& request)
 					rubberbandVector.push_back(parent->gridPos);
 					parent = parent->parent;
 				}
-				request.path.push_front(terrain->get_world_position(rubberbandVector.front()));
-				request.path.push_front(DirectX::SimpleMath::Vector3::CatmullRom(terrain->get_world_position(rubberbandVector[0]),
-					terrain->get_world_position(rubberbandVector[0]), terrain->get_world_position(rubberbandVector[1]),
-					terrain->get_world_position(rubberbandVector[2]), 0.25f));
-				request.path.push_front(DirectX::SimpleMath::Vector3::CatmullRom(terrain->get_world_position(rubberbandVector[0]),
-					terrain->get_world_position(rubberbandVector[0]), terrain->get_world_position(rubberbandVector[1]),
-					terrain->get_world_position(rubberbandVector[2]), 0.5f));
-				request.path.push_front(DirectX::SimpleMath::Vector3::CatmullRom(terrain->get_world_position(rubberbandVector[0]),
-					terrain->get_world_position(rubberbandVector[0]), terrain->get_world_position(rubberbandVector[1]),
-					terrain->get_world_position(rubberbandVector[2]), 0.75f));
-				for (int i = 1; i < rubberbandVector.size() - 2; ++i) {
-					// It's safe to rubberband, skip the nextNode
+				//if (rubberbandVector.size() > 2) {
+
+				for (int i = 0; i < rubberbandVector.size() - 1; ++i) {
+					int v1 = i - 1, v2 = i, v3 = i + 1, v4 = i + 2;
+					if (v1 < 0) {
+						v1 = 0;
+					}
+					if (v4 > static_cast<int>(rubberbandVector.size() - 1)) {
+						v4 = static_cast<int>(rubberbandVector.size() - 1);
+					}
 					request.path.push_front(terrain->get_world_position(rubberbandVector[i]));
-					request.path.push_front(DirectX::SimpleMath::Vector3::CatmullRom(terrain->get_world_position(rubberbandVector[i - 1]),
-						terrain->get_world_position(rubberbandVector[i]), terrain->get_world_position(rubberbandVector[i + 1]),
-						terrain->get_world_position(rubberbandVector[i + 2]), 0.25f));
-					request.path.push_front(DirectX::SimpleMath::Vector3::CatmullRom(terrain->get_world_position(rubberbandVector[i - 1]),
-						terrain->get_world_position(rubberbandVector[i]), terrain->get_world_position(rubberbandVector[i + 1]),
-						terrain->get_world_position(rubberbandVector[i + 2]), 0.5f));
-					request.path.push_front(DirectX::SimpleMath::Vector3::CatmullRom(terrain->get_world_position(rubberbandVector[i - 1]),
-						terrain->get_world_position(rubberbandVector[i]), terrain->get_world_position(rubberbandVector[i + 1]),
-						terrain->get_world_position(rubberbandVector[i + 2]), 0.75f));
-				}
-				for (float i = 0.25f; i <= 0.75f; i += 0.25f) {
-					request.path.push_front(DirectX::SimpleMath::Vector3::CatmullRom(terrain->get_world_position(rubberbandVector[rubberbandVector.size() - 3]),
-						terrain->get_world_position(rubberbandVector[rubberbandVector.size() - 2]), terrain->get_world_position(rubberbandVector[rubberbandVector.size() - 1]),
-						terrain->get_world_position(rubberbandVector[rubberbandVector.size() - 1]), i));
+					for (float t = 0.25f; t <= 0.75f; t += 0.25f) {
+						request.path.push_front(DirectX::SimpleMath::Vector3::CatmullRom(terrain->get_world_position(rubberbandVector[v1]),
+							terrain->get_world_position(rubberbandVector[v2]), terrain->get_world_position(rubberbandVector[v3]),
+							terrain->get_world_position(rubberbandVector[v4]), t));
+					}
+
 				}
 				request.path.push_front(terrain->get_world_position(rubberbandVector.back()));
+				/*}
+				else {
+					for (float i = 0.25f; i <= 0.75f; i += 0.25f) {
+						request.path.push_front(DirectX::SimpleMath::Vector3::CatmullRom(terrain->get_world_position(rubberbandVector[rubberbandVector.size() - 2]),
+							terrain->get_world_position(rubberbandVector[rubberbandVector.size() - 2]), terrain->get_world_position(rubberbandVector[rubberbandVector.size() - 1]),
+							terrain->get_world_position(rubberbandVector[rubberbandVector.size() - 1]), i));
+					}
+				}*/
 			}
 			else {
 				while (parent != nullptr) {
