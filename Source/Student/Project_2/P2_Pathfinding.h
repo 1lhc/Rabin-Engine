@@ -49,4 +49,5 @@ public:
 	float BlockDistance(GridPos childNode, GridPos parent);
 
 	float CalculateHeuristic(Heuristic hType, GridPos childNode, GridPos goal);
+	bool isSafeToRubberband(GridPos next, GridPos previous);
 };

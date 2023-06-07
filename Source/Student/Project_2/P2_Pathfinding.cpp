@@ -115,9 +115,64 @@ PathResult AStarPather::compute_path(PathRequest& request)
 
 		//	If parentNode is the Goal Node, then path found(return PathResult::COMPLETE).	
 		if (parent->gridPos == goal) {
-			while (parent != nullptr) {
-				request.path.push_front(terrain->get_world_position(parent->gridPos));
-				parent = parent->parent;
+			if (request.settings.rubberBanding) {
+
+				std::vector<GridPos> rubberbandVector;
+				while (parent != nullptr) {
+					rubberbandVector.push_back(parent->gridPos);
+					parent = parent->parent;
+				}
+				request.path.push_front(terrain->get_world_position(rubberbandVector.front()));
+				for (int i = 1; i < rubberbandVector.size() - 1; ++i) {
+					if (!AStarPather::isSafeToRubberband(rubberbandVector[i + 1], rubberbandVector[i - 1])) {
+						// It's safe to rubberband, skip the nextNode
+						request.path.push_front(terrain->get_world_position(rubberbandVector[i]));
+						continue;
+					}
+				}
+				request.path.push_front(terrain->get_world_position(rubberbandVector.back()));
+			}
+			else if (request.settings.smoothing) {
+				std::vector<GridPos> rubberbandVector;
+				while (parent != nullptr) {
+					rubberbandVector.push_back(parent->gridPos);
+					parent = parent->parent;
+				}
+				request.path.push_front(terrain->get_world_position(rubberbandVector.front()));
+				request.path.push_front(DirectX::SimpleMath::Vector3::CatmullRom(terrain->get_world_position(rubberbandVector[0]),
+					terrain->get_world_position(rubberbandVector[0]), terrain->get_world_position(rubberbandVector[1]),
+					terrain->get_world_position(rubberbandVector[2]), 0.25f));
+				request.path.push_front(DirectX::SimpleMath::Vector3::CatmullRom(terrain->get_world_position(rubberbandVector[0]),
+					terrain->get_world_position(rubberbandVector[0]), terrain->get_world_position(rubberbandVector[1]),
+					terrain->get_world_position(rubberbandVector[2]), 0.5f));
+				request.path.push_front(DirectX::SimpleMath::Vector3::CatmullRom(terrain->get_world_position(rubberbandVector[0]),
+					terrain->get_world_position(rubberbandVector[0]), terrain->get_world_position(rubberbandVector[1]),
+					terrain->get_world_position(rubberbandVector[2]), 0.75f));
+				for (int i = 1; i < rubberbandVector.size() - 2; ++i) {
+					// It's safe to rubberband, skip the nextNode
+					request.path.push_front(terrain->get_world_position(rubberbandVector[i]));
+					request.path.push_front(DirectX::SimpleMath::Vector3::CatmullRom(terrain->get_world_position(rubberbandVector[i - 1]),
+						terrain->get_world_position(rubberbandVector[i]), terrain->get_world_position(rubberbandVector[i + 1]),
+						terrain->get_world_position(rubberbandVector[i + 2]), 0.25f));
+					request.path.push_front(DirectX::SimpleMath::Vector3::CatmullRom(terrain->get_world_position(rubberbandVector[i - 1]),
+						terrain->get_world_position(rubberbandVector[i]), terrain->get_world_position(rubberbandVector[i + 1]),
+						terrain->get_world_position(rubberbandVector[i + 2]), 0.5f));
+					request.path.push_front(DirectX::SimpleMath::Vector3::CatmullRom(terrain->get_world_position(rubberbandVector[i - 1]),
+						terrain->get_world_position(rubberbandVector[i]), terrain->get_world_position(rubberbandVector[i + 1]),
+						terrain->get_world_position(rubberbandVector[i + 2]), 0.75f));
+				}
+				for (float i = 0.25f; i <= 0.75f; i += 0.25f) {
+					request.path.push_front(DirectX::SimpleMath::Vector3::CatmullRom(terrain->get_world_position(rubberbandVector[rubberbandVector.size() - 3]),
+						terrain->get_world_position(rubberbandVector[rubberbandVector.size() - 2]), terrain->get_world_position(rubberbandVector[rubberbandVector.size() - 1]),
+						terrain->get_world_position(rubberbandVector[rubberbandVector.size() - 1]), i));
+				}
+				request.path.push_front(terrain->get_world_position(rubberbandVector.back()));
+			}
+			else {
+				while (parent != nullptr) {
+					request.path.push_front(terrain->get_world_position(parent->gridPos));
+					parent = parent->parent;
+				}
 			}
 			return PathResult::COMPLETE;
 		}
@@ -314,4 +369,22 @@ float AStarPather::CalculateHeuristic(Heuristic hType, GridPos childNode, GridPo
 			std::min(fabs(childNode.col - goal.col), fabs(childNode.row - goal.row))));
 		break;
 	}
+}
+
+bool AStarPather::isSafeToRubberband(GridPos next, GridPos previous)
+{
+	int startX = std::min(next.row, previous.row);
+	int startY = std::min(next.col, previous.col);
+	int endX = std::max(next.row, previous.row);
+	int endY = std::max(next.col, previous.col);
+
+	for (int x = startX; x <= endX; x++) {
+		for (int y = startY; y <= endY; y++) {
+			if (terrain->is_wall(x, y)) {
+				return false;
+			}
+		}
+	}
+
+	return true;
 }
