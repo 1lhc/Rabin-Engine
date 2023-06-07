@@ -116,15 +116,17 @@ PathResult AStarPather::compute_path(PathRequest& request)
 		//	If parentNode is the Goal Node, then path found(return PathResult::COMPLETE).	
 		if (parent->gridPos == goal) {
 			std::vector<GridPos> rubberbandVector;
+			std::vector<Vec3> smoothVector;
 			while (parent != nullptr) {
-				if(request.settings.rubberBanding || request.settings.smoothing)
+				if (request.settings.rubberBanding || request.settings.smoothing) {
 					rubberbandVector.push_back(parent->gridPos);
+					smoothVector.push_back(terrain->get_world_position(parent->gridPos));
+				}
 				else
 					request.path.push_front(terrain->get_world_position(parent->gridPos));
 				parent = parent->parent;
 			}
 			if (request.settings.rubberBanding) {
-
 				request.path.push_front(terrain->get_world_position(rubberbandVector.front()));
 				for (int i = 1; i < rubberbandVector.size() - 1;) {
 					if (!AStarPather::isSafeToRubberband(rubberbandVector[i + 1], rubberbandVector[i - 1])) {
@@ -139,7 +141,7 @@ PathResult AStarPather::compute_path(PathRequest& request)
 				}
 				request.path.push_front(terrain->get_world_position(rubberbandVector.back()));
 			}
-			 if (request.settings.smoothing) {
+			if (request.settings.smoothing) {
 				/*std::vector<GridPos> rubberbandVector;
 				while (parent != nullptr) {
 					rubberbandVector.push_back(parent->gridPos);
@@ -147,14 +149,12 @@ PathResult AStarPather::compute_path(PathRequest& request)
 				}*/
 
 				if (request.settings.rubberBanding) {
-					for (int i = 0; i < rubberbandVector.size() - 1;) {
-						if (sqrt((rubberbandVector[i].row - rubberbandVector[i + 1].row) * (rubberbandVector[i].row - rubberbandVector[i + 1].row) +
-							(rubberbandVector[i].col - rubberbandVector[i + 1].col) * (rubberbandVector[i].col - rubberbandVector[i + 1].col)) > 1.5) {
-
-
-							Vec3 midd = (terrain->get_world_position(rubberbandVector[i]) + terrain->get_world_position(rubberbandVector[i + 1])) / 2.f;
-							GridPos pos = { (rubberbandVector[i].row + rubberbandVector[i + 1].row) / 2,(rubberbandVector[i].col + rubberbandVector[i + 1].col) / 2 };
-							rubberbandVector.insert(rubberbandVector.begin() + i + 1, pos);
+					for (int i = 0; i < smoothVector.size() - 1;) {
+						if (sqrt((smoothVector[i].x - smoothVector[i + 1].x) * (smoothVector[i].x - smoothVector[i + 1].x) +
+							(smoothVector[i].y - smoothVector[i + 1].y) * (smoothVector[i].y - smoothVector[i + 1].y)) > 1.5) {
+							Vec3 midd = (smoothVector[i] + smoothVector[i + 1]) / 2.f;
+							//GridPos pos = { (rubberbandVector[i].row + rubberbandVector[i + 1].row) / 2,(rubberbandVector[i].col + rubberbandVector[i + 1].col) / 2 };
+							smoothVector.insert(smoothVector.begin() + i + 1, midd);
 						}
 						else
 							++i;
@@ -162,23 +162,23 @@ PathResult AStarPather::compute_path(PathRequest& request)
 				}
 				request.path.clear();
 
-				for (int i = 0; i < rubberbandVector.size() - 1; ++i) {
+				for (int i = 0; i < smoothVector.size() - 1; ++i) {
 					int v1 = i - 1, v2 = i, v3 = i + 1, v4 = i + 2;
 					if (v1 < 0) {
 						v1 = 0;
 					}
-					if (v4 > static_cast<int>(rubberbandVector.size() - 1)) {
-						v4 = static_cast<int>(rubberbandVector.size() - 1);
+					if (v4 > static_cast<int>(smoothVector.size() - 1)) {
+						v4 = static_cast<int>(smoothVector.size() - 1);
 					}
-					request.path.push_front(terrain->get_world_position(rubberbandVector[i]));
+					request.path.push_front(smoothVector[i]);
 					for (float t = 0.25f; t <= 0.75f; t += 0.25f) {
-						request.path.push_front(DirectX::SimpleMath::Vector3::CatmullRom(terrain->get_world_position(rubberbandVector[v1]),
-							terrain->get_world_position(rubberbandVector[v2]), terrain->get_world_position(rubberbandVector[v3]),
-							terrain->get_world_position(rubberbandVector[v4]), t));
+						request.path.push_front(DirectX::SimpleMath::Vector3::CatmullRom(smoothVector[v1],
+							smoothVector[v2], smoothVector[v3],
+							smoothVector[v4], t));
 					}
 
 				}
-				request.path.push_front(terrain->get_world_position(rubberbandVector.back()));
+				request.path.push_front(smoothVector.back());
 			}
 			/*else {
 				while (parent != nullptr) {
