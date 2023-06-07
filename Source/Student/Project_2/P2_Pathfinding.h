@@ -39,7 +39,7 @@ public:
 
 	std::vector<Node*> OpenList;
 
-	void push_node(Node* add);
+	void push_node(Node* add, bool dbcol);
 	Node* popnode();
 
 	std::vector<Node*> getNeighbors(Node& parentNode);

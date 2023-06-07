@@ -107,7 +107,7 @@ PathResult AStarPather::compute_path(PathRequest& request)
 		MaxMap[start.row][start.col].givenCost = 0.f;
 		MaxMap[start.row][start.col].finalCost = CalculateHeuristic(request.settings.heuristic, MaxMap[start.row][start.col].gridPos, goal) * request.settings.weight;
 
-		push_node(&MaxMap[start.row][start.col]);
+		push_node(&MaxMap[start.row][start.col], request.settings.debugColoring);
 	}
 	while (!OpenList.empty()) {
 		//	parentNode = Pop cheapest node off Open List.
@@ -115,30 +115,52 @@ PathResult AStarPather::compute_path(PathRequest& request)
 
 		//	If parentNode is the Goal Node, then path found(return PathResult::COMPLETE).	
 		if (parent->gridPos == goal) {
+			std::vector<GridPos> rubberbandVector;
+			while (parent != nullptr) {
+				if(request.settings.rubberBanding || request.settings.smoothing)
+					rubberbandVector.push_back(parent->gridPos);
+				else
+					request.path.push_front(terrain->get_world_position(parent->gridPos));
+				parent = parent->parent;
+			}
 			if (request.settings.rubberBanding) {
 
-				std::vector<GridPos> rubberbandVector;
-				while (parent != nullptr) {
-					rubberbandVector.push_back(parent->gridPos);
-					parent = parent->parent;
-				}
 				request.path.push_front(terrain->get_world_position(rubberbandVector.front()));
-				for (int i = 1; i < rubberbandVector.size() - 1; ++i) {
+				for (int i = 1; i < rubberbandVector.size() - 1;) {
 					if (!AStarPather::isSafeToRubberband(rubberbandVector[i + 1], rubberbandVector[i - 1])) {
 						// It's safe to rubberband, skip the nextNode
 						request.path.push_front(terrain->get_world_position(rubberbandVector[i]));
-						continue;
+						++i;
+					}
+					else
+					{
+						rubberbandVector.erase(rubberbandVector.begin() + i);
 					}
 				}
 				request.path.push_front(terrain->get_world_position(rubberbandVector.back()));
 			}
-			else if (request.settings.smoothing) {
-				std::vector<GridPos> rubberbandVector;
+			 if (request.settings.smoothing) {
+				/*std::vector<GridPos> rubberbandVector;
 				while (parent != nullptr) {
 					rubberbandVector.push_back(parent->gridPos);
 					parent = parent->parent;
+				}*/
+
+				if (request.settings.rubberBanding) {
+					for (int i = 0; i < rubberbandVector.size() - 1;) {
+						if (sqrt((rubberbandVector[i].row - rubberbandVector[i + 1].row) * (rubberbandVector[i].row - rubberbandVector[i + 1].row) +
+							(rubberbandVector[i].col - rubberbandVector[i + 1].col) * (rubberbandVector[i].col - rubberbandVector[i + 1].col)) > 1.5) {
+
+
+							Vec3 midd = (terrain->get_world_position(rubberbandVector[i]) + terrain->get_world_position(rubberbandVector[i + 1])) / 2.f;
+							GridPos pos = { (rubberbandVector[i].row + rubberbandVector[i + 1].row) / 2,(rubberbandVector[i].col + rubberbandVector[i + 1].col) / 2 };
+							rubberbandVector.insert(rubberbandVector.begin() + i + 1, pos);
+						}
+						else
+							++i;
+					}
 				}
-				//if (rubberbandVector.size() > 2) {
+				request.path.clear();
 
 				for (int i = 0; i < rubberbandVector.size() - 1; ++i) {
 					int v1 = i - 1, v2 = i, v3 = i + 1, v4 = i + 2;
@@ -157,26 +179,20 @@ PathResult AStarPather::compute_path(PathRequest& request)
 
 				}
 				request.path.push_front(terrain->get_world_position(rubberbandVector.back()));
-				/*}
-				else {
-					for (float i = 0.25f; i <= 0.75f; i += 0.25f) {
-						request.path.push_front(DirectX::SimpleMath::Vector3::CatmullRom(terrain->get_world_position(rubberbandVector[rubberbandVector.size() - 2]),
-							terrain->get_world_position(rubberbandVector[rubberbandVector.size() - 2]), terrain->get_world_position(rubberbandVector[rubberbandVector.size() - 1]),
-							terrain->get_world_position(rubberbandVector[rubberbandVector.size() - 1]), i));
-					}
-				}*/
 			}
-			else {
+			/*else {
 				while (parent != nullptr) {
 					request.path.push_front(terrain->get_world_position(parent->gridPos));
 					parent = parent->parent;
 				}
-			}
+			}*/
 			return PathResult::COMPLETE;
 		}
 		//	Place parentNode on the Closed List.
 		parent->nodeState = onList::Closed;
-		terrain->set_color(parent->gridPos, Colors::Yellow);
+		if (request.settings.debugColoring) {
+			terrain->set_color(parent->gridPos, Colors::Yellow);
+		}
 
 		std::vector <Node*> validNeighbors = getNeighbors(*parent);
 		for (Node* x : validNeighbors) { //	For(all valid neighboring child nodes of parentNode) {
@@ -189,7 +205,7 @@ PathResult AStarPather::compute_path(PathRequest& request)
 				x->parent = parent;
 				x->finalCost = fx;
 				x->givenCost = gx;
-				push_node(x);
+				push_node(x, request.settings.debugColoring);
 			}
 			else if (fx < x->finalCost) { 			//	Else if child node is on Open or Closed List, AND this new one is cheaper,
 				x->parent = parent;
@@ -197,7 +213,7 @@ PathResult AStarPather::compute_path(PathRequest& request)
 				x->finalCost = fx; 					//	then take the old expensive one off both lists and put this new
 				if (x->nodeState == onList::Closed) {	//	cheaper one on the Open List.
 					x->nodeState = onList::Open;
-					push_node(x);
+					push_node(x, request.settings.debugColoring);
 				}
 			}
 		}
@@ -216,9 +232,11 @@ void AStarPather::clear_all_nodes()
 	memcpy(MaxMap, OriginalMap, sizeof(OriginalMap));
 }
 
-void AStarPather::push_node(Node* add)
+void AStarPather::push_node(Node* add, bool db)
 {
-	terrain->set_color(add->gridPos, Colors::Blue);
+	if (db) {
+		terrain->set_color(add->gridPos, Colors::Blue);
+	}
 	add->nodeState = onList::Open;
 	OpenList.push_back(add);
 }
@@ -357,9 +375,9 @@ float AStarPather::CalculateHeuristic(Heuristic hType, GridPos childNode, GridPo
 		return 0;
 		break;
 	case Heuristic::OCTILE:
-		return static_cast<float>(std::min(fabs(childNode.col - goal.col), fabs(childNode.row - goal.row) *
+		return static_cast<float>(std::min(fabs(childNode.col - goal.col), fabs(childNode.row - goal.row)) *
 			sqrttwo + std::max(fabs(childNode.col - goal.col), fabs(childNode.row - goal.row)) -
-			std::min(fabs(childNode.col - goal.col), fabs(childNode.row - goal.row))));
+			std::min(fabs(childNode.col - goal.col), fabs(childNode.row - goal.row)));
 		break;
 	default:
 		return static_cast<float>(std::min(fabs(childNode.col - goal.col), fabs(childNode.row - goal.row) *
@@ -378,9 +396,18 @@ bool AStarPather::isSafeToRubberband(GridPos next, GridPos previous)
 
 	for (int x = startX; x <= endX; x++) {
 		for (int y = startY; y <= endY; y++) {
-			if (terrain->is_wall(x, y)) {
+			if (terrain->is_wall(x, y))// || !terrain->is_valid_grid_position(x,y)) 
+			{
 				return false;
 			}
+
+			//if (x != startX && y != startY) {  // Not on the border of the box
+			//	if (terrain->is_wall(x-1, y) && terrain->is_wall(x, y-1)) {
+
+			//	//if (grid[x - 1][y].isWall && grid[x][y - 1].isWall) {
+			//		return false;  // Obstacle in the diagonal path
+			//	}
+			//}
 		}
 	}
 
