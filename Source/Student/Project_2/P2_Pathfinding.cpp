@@ -151,7 +151,8 @@ PathResult AStarPather::compute_path(PathRequest& request)
 				if (request.settings.rubberBanding) {
 					for (int i = 0; i < smoothVector.size() - 1;) {
 						if (sqrt((smoothVector[i].x - smoothVector[i + 1].x) * (smoothVector[i].x - smoothVector[i + 1].x) +
-							(smoothVector[i].y - smoothVector[i + 1].y) * (smoothVector[i].y - smoothVector[i + 1].y)) > 1.5) {
+							(smoothVector[i].y - smoothVector[i + 1].y) * (smoothVector[i].y - smoothVector[i + 1].y)) >
+							(terrain->get_world_position(MaxMap[0][0].gridPos).x + terrain->get_world_position(MaxMap[0][3].gridPos).x) / 2.f) {
 							Vec3 midd = (smoothVector[i] + smoothVector[i + 1]) / 2.f;
 							//GridPos pos = { (rubberbandVector[i].row + rubberbandVector[i + 1].row) / 2,(rubberbandVector[i].col + rubberbandVector[i + 1].col) / 2 };
 							smoothVector.insert(smoothVector.begin() + i + 1, midd);
