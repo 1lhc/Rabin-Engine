@@ -142,19 +142,12 @@ PathResult AStarPather::compute_path(PathRequest& request)
 				request.path.push_front(terrain->get_world_position(rubberbandVector.back()));
 			}
 			if (request.settings.smoothing) {
-				/*std::vector<GridPos> rubberbandVector;
-				while (parent != nullptr) {
-					rubberbandVector.push_back(parent->gridPos);
-					parent = parent->parent;
-				}*/
-
 				if (request.settings.rubberBanding) {
 					for (int i = 0; i < smoothVector.size() - 1;) {
 						if (sqrt((smoothVector[i].x - smoothVector[i + 1].x) * (smoothVector[i].x - smoothVector[i + 1].x) +
 							(smoothVector[i].y - smoothVector[i + 1].y) * (smoothVector[i].y - smoothVector[i + 1].y)) >
 							(terrain->get_world_position(MaxMap[0][0].gridPos).x + terrain->get_world_position(MaxMap[0][3].gridPos).x) / 2.f) {
 							Vec3 midd = (smoothVector[i] + smoothVector[i + 1]) / 2.f;
-							//GridPos pos = { (rubberbandVector[i].row + rubberbandVector[i + 1].row) / 2,(rubberbandVector[i].col + rubberbandVector[i + 1].col) / 2 };
 							smoothVector.insert(smoothVector.begin() + i + 1, midd);
 						}
 						else
@@ -181,12 +174,6 @@ PathResult AStarPather::compute_path(PathRequest& request)
 				}
 				request.path.push_front(smoothVector.back());
 			}
-			/*else {
-				while (parent != nullptr) {
-					request.path.push_front(terrain->get_world_position(parent->gridPos));
-					parent = parent->parent;
-				}
-			}*/
 			return PathResult::COMPLETE;
 		}
 		//	Place parentNode on the Closed List.
@@ -397,18 +384,10 @@ bool AStarPather::isSafeToRubberband(GridPos next, GridPos previous)
 
 	for (int x = startX; x <= endX; x++) {
 		for (int y = startY; y <= endY; y++) {
-			if (terrain->is_wall(x, y))// || !terrain->is_valid_grid_position(x,y)) 
+			if (terrain->is_wall(x, y))
 			{
 				return false;
-			}
-
-			//if (x != startX && y != startY) {  // Not on the border of the box
-			//	if (terrain->is_wall(x-1, y) && terrain->is_wall(x, y-1)) {
-
-			//	//if (grid[x - 1][y].isWall && grid[x][y - 1].isWall) {
-			//		return false;  // Obstacle in the diagonal path
-			//	}
-			//}
+			}			
 		}
 	}
 
