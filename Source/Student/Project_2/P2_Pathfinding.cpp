@@ -146,7 +146,8 @@ PathResult AStarPather::compute_path(PathRequest& request)
 					for (int i = 0; i < smoothVector.size() - 1;) {
 						if (sqrt((smoothVector[i].x - smoothVector[i + 1].x) * (smoothVector[i].x - smoothVector[i + 1].x) +
 							(smoothVector[i].y - smoothVector[i + 1].y) * (smoothVector[i].y - smoothVector[i + 1].y)) >
-							(terrain->get_world_position(MaxMap[0][0].gridPos).x + terrain->get_world_position(MaxMap[0][3].gridPos).x) / 2.f) {
+							((terrain->get_world_position(MaxMap[0][3].gridPos).z - terrain->get_world_position(MaxMap[0][0].gridPos).z) / 2.f))
+						{
 							Vec3 midd = (smoothVector[i] + smoothVector[i + 1]) / 2.f;
 							smoothVector.insert(smoothVector.begin() + i + 1, midd);
 						}
@@ -216,7 +217,6 @@ PathResult AStarPather::compute_path(PathRequest& request)
 
 void AStarPather::clear_all_nodes()
 {
-	//MaxMap = OriginalMap;
 	memcpy(MaxMap, OriginalMap, sizeof(OriginalMap));
 }
 
@@ -387,7 +387,7 @@ bool AStarPather::isSafeToRubberband(GridPos next, GridPos previous)
 			if (terrain->is_wall(x, y))
 			{
 				return false;
-			}			
+			}
 		}
 	}
 
