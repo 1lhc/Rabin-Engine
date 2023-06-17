@@ -90,10 +90,11 @@ bool is_clear_path(int row0, int col0, int row1, int col1)
 	// WRITE YOUR CODE HERE
 	//(terrain->get_world_position(0,0).z
 	//Vec2 center0 = { col0 /*+ 0.5f*/, row0/* + 0.5f */ }; // Center point of cell (row0, col0)
-	Vec3 zhongjian0 = terrain->get_world_position(col0, row0);
+	Vec2 zhongjian0 = { terrain->get_world_position(row0, col0).z, terrain->get_world_position(row0, col0).x };
 	//Vec2 center1 = { col1 /*+ 0.5f*/, row1 /*+ 0.5f*/ }; // Center point of cell (row1, col1)
-	Vec2 zhongjian1 = { terrain->get_world_position(col1, row1).z, terrain->get_world_position(col1, row1).x };
-	float halfcellLength = (terrain->get_world_position(0, 1).z - terrain->get_world_position(0, 0).z) / 2;
+	Vec2 zhongjian1 = { terrain->get_world_position(row1, col1).z, terrain->get_world_position(row1, col1).x };
+	//float halfcellLength = (terrain->get_world_position(0, 1).z - terrain->get_world_position(0, 0).z) / 2;
+	float halfcellLength = terrain->get_world_position(0, 0).z;
 
 	// Puff out the four boundary lines slightly
 	float epsilon = 0.001f;
@@ -101,23 +102,29 @@ bool is_clear_path(int row0, int col0, int row1, int col1)
 	 Vec2 topRight = { center0.x + epsilon, center0.y - epsilon };
 	 Vec2 bottomLeft = { center0.x - epsilon, center0.y + epsilon };
 	 Vec2 bottomRight = { center0.x + epsilon, center0.y + epsilon };*/
-	Vec2 topLeft = { zhongjian0.z - epsilon, zhongjian0.x - epsilon }; /*{ center0.x - epsilon, center0.y - epsilon };*/
-	Vec2 topRight = { zhongjian0.z + epsilon, zhongjian0.x - epsilon };
-	Vec2 bottomLeft = { zhongjian0.z - epsilon, zhongjian0.x + epsilon };
-	Vec2 bottomRight = { zhongjian0.z + epsilon, zhongjian0.x + epsilon };
-
+	//Vec2 topLeft = { zhongjian0.z - epsilon, zhongjian0.x - epsilon }; /*{ center0.x - epsilon, center0.y - epsilon };*/
+	//Vec2 topRight = { zhongjian0.z + epsilon, zhongjian0.x - epsilon };
+	//Vec2 bottomLeft = { zhongjian0.z - epsilon, zhongjian0.x + epsilon };
+	//Vec2 bottomRight = { zhongjian0.z + epsilon, zhongjian0.x + epsilon };
+	
 	// Check if the line between center0 and center1 intersects the four boundary lines of every wall cell
 	for (int r = 0; r < terrain->get_map_height(); r++) {
 		for (int c = 0; c < terrain->get_map_width(); c++) {
 			if (terrain->is_wall(r, c)) {
 				//Vec2 wallCenter = { c + 0.5f, r + 0.5f }; // Center point of wall cell (r, c)
-				Vec2 wallCenter = { terrain->get_world_position(col1, row1).z, terrain->get_world_position(col1, row1).x }; // Center point of wall cell (r, c)
-
+				Vec2 bottomLeft = { terrain->get_world_position(r, c).z - halfcellLength, terrain->get_world_position(r, c).x - halfcellLength }; // Center point of wall cell (r, c)
+				Vec2 bottomRight = { bottomLeft.x + 2 * halfcellLength, bottomLeft.y };
+				Vec2 topLeft = { bottomLeft.x, bottomLeft.y + 2 * halfcellLength };
+				Vec2 topRight = { topLeft.x + 2 * halfcellLength, topLeft.y };
 				// Check intersection with the four boundary lines of the wall cell
-				if (line_intersect(topLeft, zhongjian1, wallCenter, { wallCenter.x - halfcellLength, wallCenter.y - halfcellLength }) ||
+			/*	if (line_intersect(topLeft, zhongjian1, wallCenter, { wallCenter.x - halfcellLength, wallCenter.y - halfcellLength }) ||
 					line_intersect(topRight, zhongjian1, wallCenter, { wallCenter.x + halfcellLength, wallCenter.y - halfcellLength }) ||
 					line_intersect(bottomLeft, zhongjian1, wallCenter, { wallCenter.x - halfcellLength, wallCenter.y + halfcellLength }) ||
-					line_intersect(bottomRight, zhongjian1, wallCenter, { wallCenter.x + halfcellLength, wallCenter.y + halfcellLength })) {
+					line_intersect(bottomRight, zhongjian1, wallCenter, { wallCenter.x + halfcellLength, wallCenter.y + halfcellLength })) {*/
+				if (line_intersect(zhongjian0, zhongjian1, bottomLeft,bottomRight ) ||
+					line_intersect(zhongjian0, zhongjian1, bottomLeft, topLeft) ||
+					line_intersect(zhongjian0, zhongjian1, topLeft, topRight) ||
+					line_intersect(zhongjian0, zhongjian1, bottomRight, topRight)) {
 					return false; // Line intersects a wall cell's boundary lines, path is not clear
 				}
 			}
