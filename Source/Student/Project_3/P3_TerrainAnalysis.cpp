@@ -23,8 +23,56 @@ float distance_to_closest_wall(int row, int col)
     */
 
     // WRITE YOUR CODE HERE
-    
-    return 0.0f; // REPLACE THIS
+   // float minDistance = FLT_MAX; // Initialize minDistance to a large value
+
+   //// Iterate over all cells in the map
+   // for (int i = 0; i < terrain->get_map_height(); i++)
+   // {
+   //     for (int j = 0; j < terrain->get_map_width(); j++)
+   //     {
+   //         // Check if the cell is a valid grid position and a wall
+   //         if ((terrain->is_valid_grid_position(i, j) && terrain->is_wall(i, j)) || !terrain->is_valid_grid_position(i, j))
+   //         {
+   //             // Calculate the Euclidean distance between the current cell and the input cell (row, col)
+   //             float distance = static_cast<float>(sqrt(pow(j - col, 2) + pow(i - row, 2)));
+
+   //             // Update minDistance if the calculated distance is smaller
+   //             if (distance < minDistance)
+   //             {
+   //                 minDistance = distance;
+   //             }
+   //         }
+   //     }
+   // }
+
+   // return minDistance;
+    float minDistance = FLT_MAX; // Initialize minDistance to a large value
+
+    // Iterate over all cells in the map, including cells outside the map bounds
+    for (int i = -1; i <= terrain->get_map_height(); i++)
+    {
+        for (int j = -1; j <= terrain->get_map_width(); j++)
+        {
+            // Check if the cell is within the map bounds or outside
+            bool isValidPosition = terrain->is_valid_grid_position(i, j);
+            bool isWall = !isValidPosition || terrain->is_wall(i, j);
+
+            if (isWall)
+            {
+                // Calculate the Euclidean distance between the current cell and the input cell (row, col)
+                float distance = static_cast<float>(sqrt(pow(j - col, 2) + pow(i - row, 2)));
+
+                // Update minDistance if the calculated distance is smaller
+                if (distance < minDistance)
+                {
+                    minDistance = distance;
+                }
+            }
+        }
+    }
+
+    return minDistance;
+    // return 0.0f; // REPLACE THIS
 }
 
 bool is_clear_path(int row0, int col0, int row1, int col1)
@@ -34,13 +82,42 @@ bool is_clear_path(int row0, int col0, int row1, int col1)
         between their centerpoints doesn't intersect the four boundary lines of every
         wall cell.  You should puff out the four boundary lines by a very tiny amount
         so that a diagonal line passing by the corner will intersect it.  Make use of the
-        line_intersect helper function for the intersection test and the is_wall member
-        function in the global terrain to determine if a cell is a wall or not.
+        line_intersect helper function 
+        bool line_intersect(const Vec2 & line0P0, const Vec2 & line0P1, const Vec2 & line1P0, const Vec2 & line1P1)
+        for the intersection test and the is_wall member function in the global terrain to 
+        determine if a cell is a wall or not.
     */
-
     // WRITE YOUR CODE HERE
+    Vec2 center0 = { col0 + 0.5f, row0 + 0.5f }; // Center point of cell (row0, col0)
+    Vec2 center1 = { col1 + 0.5f, row1 + 0.5f }; // Center point of cell (row1, col1)
 
-    return false; // REPLACE THIS
+    // Puff out the four boundary lines slightly
+    float epsilon = 0.001f;
+    Vec2 topLeft = { center0.x - epsilon, center0.y - epsilon };
+    Vec2 topRight = { center0.x + epsilon, center0.y - epsilon };
+    Vec2 bottomLeft = { center0.x - epsilon, center0.y + epsilon };
+    Vec2 bottomRight = { center0.x + epsilon, center0.y + epsilon };
+
+    // Check if the line between center0 and center1 intersects the four boundary lines of every wall cell
+    for (int r = 0; r < terrain->get_map_height(); r++) {
+        for (int c = 0; c < terrain->get_map_width(); c++) {
+            if (terrain->is_wall(r, c)) {
+                Vec2 wallCenter = { c + 0.5f, r + 0.5f }; // Center point of wall cell (r, c)
+
+                // Check intersection with the four boundary lines of the wall cell
+                if (line_intersect(topLeft, center1, wallCenter, { wallCenter.x - 0.5f, wallCenter.y - 0.5f }) ||
+                    line_intersect(topRight, center1, wallCenter, { wallCenter.x + 0.5f, wallCenter.y - 0.5f }) ||
+                    line_intersect(bottomLeft, center1, wallCenter, { wallCenter.x - 0.5f, wallCenter.y + 0.5f }) ||
+                    line_intersect(bottomRight, center1, wallCenter, { wallCenter.x + 0.5f, wallCenter.y + 0.5f })) {
+                    return false; // Line intersects a wall cell's boundary lines, path is not clear
+                }
+            }
+        }
+    }
+
+    return true; // No intersection with any wall cell's boundary lines, path is clear
+
+    // return false; // REPLACE THIS
 }
 
 void analyze_openness(MapLayer<float> &layer)
@@ -52,6 +129,11 @@ void analyze_openness(MapLayer<float> &layer)
     */
 
     // WRITE YOUR CODE HERE
+    for (int r = 0; r < terrain->get_map_height(); r++) {
+        for (int c = 0; c < terrain->get_map_width(); c++) {
+            layer.set_value(r,c,(1 / ( distance_to_closest_wall(r,c) * distance_to_closest_wall(r, c) )));
+        }
+    }
 }
 
 void analyze_visibility(MapLayer<float> &layer)
