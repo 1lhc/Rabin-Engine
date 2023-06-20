@@ -88,39 +88,29 @@ bool is_clear_path(int row0, int col0, int row1, int col1)
 		determine if a cell is a wall or not.
 	*/
 	// WRITE YOUR CODE HERE
-	//(terrain->get_world_position(0,0).z
-	//Vec2 center0 = { col0 /*+ 0.5f*/, row0/* + 0.5f */ }; // Center point of cell (row0, col0)
 	Vec2 zhongjian0 = { terrain->get_world_position(row0, col0).z, terrain->get_world_position(row0, col0).x };
-	//Vec2 center1 = { col1 /*+ 0.5f*/, row1 /*+ 0.5f*/ }; // Center point of cell (row1, col1)
 	Vec2 zhongjian1 = { terrain->get_world_position(row1, col1).z, terrain->get_world_position(row1, col1).x };
-	//float halfcellLength = (terrain->get_world_position(0, 1).z - terrain->get_world_position(0, 0).z) / 2;
 	float halfcellLength = terrain->get_world_position(0, 0).z;
 
 	// Puff out the four boundary lines slightly
 	float epsilon = 0.001f;
-	/* Vec2 topLeft = { center0.x - epsilon, center0.y - epsilon };
-	 Vec2 topRight = { center0.x + epsilon, center0.y - epsilon };
-	 Vec2 bottomLeft = { center0.x - epsilon, center0.y + epsilon };
-	 Vec2 bottomRight = { center0.x + epsilon, center0.y + epsilon };*/
-	 //Vec2 topLeft = { zhongjian0.z - epsilon, zhongjian0.x - epsilon }; /*{ center0.x - epsilon, center0.y - epsilon };*/
-	 //Vec2 topRight = { zhongjian0.z + epsilon, zhongjian0.x - epsilon };
-	 //Vec2 bottomLeft = { zhongjian0.z - epsilon, zhongjian0.x + epsilon };
-	 //Vec2 bottomRight = { zhongjian0.z + epsilon, zhongjian0.x + epsilon };
 
-	 // Check if the line between center0 and center1 intersects the four boundary lines of every wall cell
+	int minRow = std::min(row0, row1);
+	int minCol = std::min(col0, col1);
+
+	int maxRow = std::max(row0, row1);
+	int maxCol = std::max(col0, col1);
+	// Check if the line between center0 and center1 intersects the four boundary lines of every wall cell
+   //for (int r = minRow; r < maxRow; r++) {
+   //	for (int c = minCol; c < maxCol; c++) {
 	for (int r = 0; r < terrain->get_map_height(); r++) {
 		for (int c = 0; c < terrain->get_map_width(); c++) {
 			if (terrain->is_wall(r, c)) {
-				//Vec2 wallCenter = { c + 0.5f, r + 0.5f }; // Center point of wall cell (r, c)
 				Vec2 bottomLeft = { terrain->get_world_position(r, c).z - halfcellLength, terrain->get_world_position(r, c).x - halfcellLength }; // Center point of wall cell (r, c)
 				Vec2 bottomRight = { bottomLeft.x + 2 * halfcellLength, bottomLeft.y };
 				Vec2 topLeft = { bottomLeft.x, bottomLeft.y + 2 * halfcellLength };
 				Vec2 topRight = { topLeft.x + 2 * halfcellLength, topLeft.y };
 				// Check intersection with the four boundary lines of the wall cell
-			/*	if (line_intersect(topLeft, zhongjian1, wallCenter, { wallCenter.x - halfcellLength, wallCenter.y - halfcellLength }) ||
-					line_intersect(topRight, zhongjian1, wallCenter, { wallCenter.x + halfcellLength, wallCenter.y - halfcellLength }) ||
-					line_intersect(bottomLeft, zhongjian1, wallCenter, { wallCenter.x - halfcellLength, wallCenter.y + halfcellLength }) ||
-					line_intersect(bottomRight, zhongjian1, wallCenter, { wallCenter.x + halfcellLength, wallCenter.y + halfcellLength })) {*/
 				if (line_intersect(zhongjian0, zhongjian1, bottomLeft, bottomRight) ||
 					line_intersect(zhongjian0, zhongjian1, bottomLeft, topLeft) ||
 					line_intersect(zhongjian0, zhongjian1, topLeft, topRight) ||
@@ -132,8 +122,6 @@ bool is_clear_path(int row0, int col0, int row1, int col1)
 	}
 
 	return true; // No intersection with any wall cell's boundary lines, path is clear
-
-	// return false; // REPLACE THIS
 }
 
 void analyze_openness(MapLayer<float>& layer)
@@ -177,7 +165,7 @@ void analyze_visibility(MapLayer<float>& layer)
 			for (int i = 0; i < numRows; i++) {
 				for (int j = 0; j < numCols; j++) {
 					if (i == r && j == c) {
-						visibility += 1.0f;  // The cell is always visible to itself
+						++visibility;  // The cell is always visible to itself
 					}
 					else {
 						bool isClearPath = is_clear_path(r, c, i, j);
@@ -264,6 +252,48 @@ void analyze_agent_vision(MapLayer<float>& layer, const Agent* agent)
 	*/
 
 	// WRITE YOUR CODE HERE
+
+	const int layerHeight = terrain->get_map_height();
+	const int layerWidth = terrain->get_map_width();
+
+	// Convert agent's position to 2D coordinates
+	int agentRow = static_cast<int>(agent->get_position().y);
+	int agentCol = static_cast<int>(agent->get_position().x);
+
+	// Calculate agent's view direction vector
+	float agentDirectionX = std::cos(agent->get_yaw());
+	float agentDirectionZ = std::sin(agent->get_yaw());
+
+	// Calculate field of view boundaries
+	const float fieldOfView = 190.0f;  // slightly larger than 180 degrees
+	const float halfFieldOfView = fieldOfView / 2.0f;
+	float minCosine = static_cast<float>(std::cos(halfFieldOfView * (M_PI / 180.0f)));
+
+	// Iterate over all cells in the layer
+	for (int row = 0; row < layerHeight; ++row)
+	{
+		for (int col = 0; col < layerWidth; ++col)
+		{
+			// Calculate the vector from agent to cell
+			float cellVectorX = col + 0.5f - agent->get_position().x;
+			float cellVectorZ = row + 0.5f - agent->get_position().z;
+
+			// Normalize the cell vector
+			float cellVectorLength = std::sqrt(cellVectorX * cellVectorX + cellVectorZ * cellVectorZ);
+			cellVectorX /= cellVectorLength;
+			cellVectorZ /= cellVectorLength;
+
+			// Calculate the dot product between view vector and cell vector
+			float dotProduct = agentDirectionX * cellVectorX + agentDirectionZ * cellVectorZ;
+
+			// Check if the cell is within agent's field of view
+			if (dotProduct >= minCosine && is_clear_path(agentRow, agentCol, row, col))
+			{
+				// Mark the cell as visible
+				layer.set_value(row, col, 1.0f);
+			}
+		}
+	}
 }
 
 void propagate_solo_occupancy(MapLayer<float>& layer, float decay, float growth)
