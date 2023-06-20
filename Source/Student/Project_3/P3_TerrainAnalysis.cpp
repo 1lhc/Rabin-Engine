@@ -102,12 +102,12 @@ bool is_clear_path(int row0, int col0, int row1, int col1)
 	 Vec2 topRight = { center0.x + epsilon, center0.y - epsilon };
 	 Vec2 bottomLeft = { center0.x - epsilon, center0.y + epsilon };
 	 Vec2 bottomRight = { center0.x + epsilon, center0.y + epsilon };*/
-	//Vec2 topLeft = { zhongjian0.z - epsilon, zhongjian0.x - epsilon }; /*{ center0.x - epsilon, center0.y - epsilon };*/
-	//Vec2 topRight = { zhongjian0.z + epsilon, zhongjian0.x - epsilon };
-	//Vec2 bottomLeft = { zhongjian0.z - epsilon, zhongjian0.x + epsilon };
-	//Vec2 bottomRight = { zhongjian0.z + epsilon, zhongjian0.x + epsilon };
-	
-	// Check if the line between center0 and center1 intersects the four boundary lines of every wall cell
+	 //Vec2 topLeft = { zhongjian0.z - epsilon, zhongjian0.x - epsilon }; /*{ center0.x - epsilon, center0.y - epsilon };*/
+	 //Vec2 topRight = { zhongjian0.z + epsilon, zhongjian0.x - epsilon };
+	 //Vec2 bottomLeft = { zhongjian0.z - epsilon, zhongjian0.x + epsilon };
+	 //Vec2 bottomRight = { zhongjian0.z + epsilon, zhongjian0.x + epsilon };
+
+	 // Check if the line between center0 and center1 intersects the four boundary lines of every wall cell
 	for (int r = 0; r < terrain->get_map_height(); r++) {
 		for (int c = 0; c < terrain->get_map_width(); c++) {
 			if (terrain->is_wall(r, c)) {
@@ -121,7 +121,7 @@ bool is_clear_path(int row0, int col0, int row1, int col1)
 					line_intersect(topRight, zhongjian1, wallCenter, { wallCenter.x + halfcellLength, wallCenter.y - halfcellLength }) ||
 					line_intersect(bottomLeft, zhongjian1, wallCenter, { wallCenter.x - halfcellLength, wallCenter.y + halfcellLength }) ||
 					line_intersect(bottomRight, zhongjian1, wallCenter, { wallCenter.x + halfcellLength, wallCenter.y + halfcellLength })) {*/
-				if (line_intersect(zhongjian0, zhongjian1, bottomLeft,bottomRight ) ||
+				if (line_intersect(zhongjian0, zhongjian1, bottomLeft, bottomRight) ||
 					line_intersect(zhongjian0, zhongjian1, bottomLeft, topLeft) ||
 					line_intersect(zhongjian0, zhongjian1, topLeft, topRight) ||
 					line_intersect(zhongjian0, zhongjian1, bottomRight, topRight)) {
@@ -147,7 +147,8 @@ void analyze_openness(MapLayer<float>& layer)
 	// WRITE YOUR CODE HERE
 	for (int r = 0; r < terrain->get_map_height(); r++) {
 		for (int c = 0; c < terrain->get_map_width(); c++) {
-			layer.set_value(r, c, (1 / (distance_to_closest_wall(r, c) * distance_to_closest_wall(r, c))));
+			if (!terrain->is_wall(r, c))
+				layer.set_value(r, c, (1 / (distance_to_closest_wall(r, c) * distance_to_closest_wall(r, c))));
 		}
 	}
 }
@@ -168,30 +169,26 @@ void analyze_visibility(MapLayer<float>& layer)
 	int numRows = terrain->get_map_height();
 	int numCols = terrain->get_map_width();
 
-	for (int row = 0; row < numRows; row++) {
-		for (int col = 0; col < numCols; col++) {
-			int visibleCells = 0;
-			int totalCells = 0;
+	// Calculate visibility for each cell
+	for (int r = 0; r < numRows; r++) {
+		for (int c = 0; c < numCols; c++) {
+			float visibility = 0.0f;
 
-			for (int r = 0; r < numRows; r++) {
-				for (int c = 0; c < numCols; c++) {
-					if (!(r == row && c == col)) {  // Exclude the current cell
-						totalCells++;
-
-						// Check if the current cell is visible from the (row, col) cell
-						if (is_clear_path(row, col, r, c)) {
-							visibleCells++;
-						}
+			for (int i = 0; i < numRows; i++) {
+				for (int j = 0; j < numCols; j++) {
+					if (i == r && j == c) {
+						visibility += 1.0f;  // The cell is always visible to itself
+					}
+					else {
+						bool isClearPath = is_clear_path(r, c, i, j);
+						visibility += static_cast<float>(isClearPath);
 					}
 				}
 			}
 
-			// Calculate the visibility ratio and cap it at 1.0
-			float visibility = static_cast<float>(visibleCells / 160)/*totalCells*/;
-			visibility = std::min(visibility, 1.0f);
-
-			// Set the visibility value in the layer
-			layer.set_value(row, col, visibility);
+			visibility /= 160.0f;  // Divide by the magic number
+			visibility = std::min(1.0f, visibility);  // Cap the value at 1.0
+			layer.set_value(r, c, visibility);
 		}
 	}
 }
@@ -199,8 +196,8 @@ void analyze_visibility(MapLayer<float>& layer)
 void analyze_visible_to_cell(MapLayer<float>& layer, int row, int col)
 {
 	/*
-		For every cell in the given layer mark it with 1.0
-		if it is visible to the given cell, 0.5 if it isn't visible but is next to a visible cell,
+		For every cell in the given layer mark it with 1.0 if it is visible to the given cell,
+		0.5 if it isn't visible but is next to a visible cell,
 		or 0.0 otherwise.
 
 		Two cells are visible to each other if a line between their centerpoints doesn't
@@ -214,17 +211,33 @@ void analyze_visible_to_cell(MapLayer<float>& layer, int row, int col)
 
 	for (int r = 0; r < numRows; r++) {
 		for (int c = 0; c < numCols; c++) {
-			if (r == row && c == col) {
-				layer.set_value(r, c, 1.0f); // Given cell is always visible to itself
-			}
-			else if (is_clear_path(row, col, r, c)) {
-				layer.set_value(r, c, 1.0f); // Visible cell
-			}
-			else if (std::abs(r - row) <= 1 && std::abs(c - col) <= 1) {
-				layer.set_value(r, c, 0.5f); // Cell next to a visible cell
-			}
-			else {
-				layer.set_value(r, c, 0.0f); // Not visible cell
+			if (!terrain->is_wall(r, c)) {
+				if (r == row && c == col) {
+					layer.set_value(r, c, 1.0f); // Given cell is always visible to itself
+				}
+				else if (is_clear_path(row, col, r, c)) {
+					layer.set_value(r, c, 1.0f); // Visible cell
+
+				}
+				else if (terrain->is_valid_grid_position(r - 1, c - 1) && layer.get_value(r - 1, c - 1) == 1.0f || //bottom
+					terrain->is_valid_grid_position(r - 1, c) && layer.get_value(r - 1, c) == 1.0f ||
+					terrain->is_valid_grid_position(r - 1, c + 1) && layer.get_value(r - 1, c + 1) == 1.0f ||
+
+					terrain->is_valid_grid_position(r, c - 1) && layer.get_value(r, c - 1) == 1.0f || // mid
+					terrain->is_valid_grid_position(r, c + 1) && layer.get_value(r, c + 1) == 1.0f ||
+
+					terrain->is_valid_grid_position(r + 1, c - 1) && layer.get_value(r + 1, c - 1) == 1.0f || // top
+					terrain->is_valid_grid_position(r + 1, c) && layer.get_value(r + 1, c) == 1.0f ||
+					terrain->is_valid_grid_position(r + 1, c + 1) && layer.get_value(r + 1, c + 1) == 1.0f) {
+
+					layer.set_value(r, c, 0.5f); // Cell next to a visible cell
+				}
+				//else if (std::abs(r - row) <= 1 && std::abs(c - col) <= 1) { // Only checks 
+				//	layer.set_value(r, c, 0.5f); // Cell next to a visible cell
+				//}
+				else {
+					layer.set_value(r, c, 0.0f); // Not visible cell
+				}
 			}
 		}
 	}
