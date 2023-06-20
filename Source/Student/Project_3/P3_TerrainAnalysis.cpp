@@ -101,10 +101,10 @@ bool is_clear_path(int row0, int col0, int row1, int col1)
 	int maxRow = std::max(row0, row1);
 	int maxCol = std::max(col0, col1);
 	// Check if the line between center0 and center1 intersects the four boundary lines of every wall cell
-   //for (int r = minRow; r < maxRow; r++) {
-   //	for (int c = minCol; c < maxCol; c++) {
-	for (int r = 0; r < terrain->get_map_height(); r++) {
-		for (int c = 0; c < terrain->get_map_width(); c++) {
+   for (int r = minRow; r <= maxRow; r++) {
+   	for (int c = minCol; c <= maxCol; c++) {
+	//for (int r = 0; r < terrain->get_map_height(); r++) {
+	//	for (int c = 0; c < terrain->get_map_width(); c++) {
 			if (terrain->is_wall(r, c)) {
 				Vec2 bottomLeft = { terrain->get_world_position(r, c).z - halfcellLength, terrain->get_world_position(r, c).x - halfcellLength }; // Center point of wall cell (r, c)
 				Vec2 bottomRight = { bottomLeft.x + 2 * halfcellLength, bottomLeft.y };
@@ -217,6 +217,7 @@ void analyze_visible_to_cell(MapLayer<float>& layer, int row, int col)
 					terrain->is_valid_grid_position(r + 1, c - 1) && layer.get_value(r + 1, c - 1) == 1.0f || // top
 					terrain->is_valid_grid_position(r + 1, c) && layer.get_value(r + 1, c) == 1.0f ||
 					terrain->is_valid_grid_position(r + 1, c + 1) && layer.get_value(r + 1, c + 1) == 1.0f) {
+				/*	if(terrain->is_wall())*/
 
 					layer.set_value(r, c, 0.5f); // Cell next to a visible cell
 				}
@@ -229,6 +230,7 @@ void analyze_visible_to_cell(MapLayer<float>& layer, int row, int col)
 			}
 		}
 	}
+	
 }
 
 void analyze_agent_vision(MapLayer<float>& layer, const Agent* agent)
