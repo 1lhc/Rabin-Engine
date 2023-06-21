@@ -221,40 +221,12 @@ void analyze_agent_vision(MapLayer<float>& layer, const Agent* agent)
 	*/
 	// WRITE YOUR CODE HERE
 
-	//// Iterate over all cells in the layer
-	//for (int row = 0; row < layerHeight; ++row)
-	//{
-	//	for (int col = 0; col < layerWidth; ++col)
-	//	{
-	//		// Calculate the vector from agent to cell
-	//		/*float cellVectorX = col + 0.5f - agent->get_position().x;
-	//		float cellVectorZ = row + 0.5f - agent->get_position().z;*/
-	//		int cellVectorX = col /*+ 0.5f*/ - terrain->get_grid_position(agent->get_position()).col;
-	//		int cellVectorZ = row /*+ 0.5f */- terrain->get_grid_position(agent->get_position()).row;
-
-	//		// Normalize the cell vector
-	//		//float cellVectorLength = std::sqrt(cellVectorX * cellVectorX + cellVectorZ * cellVectorZ);
-	//		/*cellVectorX /= cellVectorLength;
-	//		cellVectorZ /= cellVectorLength;*/
-
-	//		// Calculate the dot product between view vector and cell vector
-	//		float dotProduct = agentDirectionX * cellVectorX + agentDirectionZ * cellVectorZ;
-
-	//		// Check if the cell is within agent's field of view
-	//		if (dotProduct >= minCosine && is_clear_path(agentRow, agentCol, row, col))
-	//		{
-	//			// Mark the cell as visible
-	//			layer.set_value(row, col, 1.0f);
-	//		}
-	//	}
-	//}
 	const int layerHeight = terrain->get_map_height();
 	const int layerWidth = terrain->get_map_width();
 	int agentRow = terrain->get_grid_position(agent->get_position()).row;
 	int agentCol = terrain->get_grid_position(agent->get_position()).col;
 	Vec3 agentView = agent->get_forward_vector();
 	agentView.Normalize();
-	//float fieldofview = static_cast<float>(std::cos((180.f * M_PI / 180.f) / 2));
 	for (int row = 0; row < layerHeight; ++row)
 	{
 		for (int col = 0; col < layerWidth; ++col)
@@ -262,10 +234,10 @@ void analyze_agent_vision(MapLayer<float>& layer, const Agent* agent)
 			// Calculate the vector from agent to cell
 			Vec3 AgentToCell = terrain->get_world_position(row, col) - agent->get_position();
 			AgentToCell.Normalize();
-			float costiter = (AgentToCell.Dot(agentView));// / (AgentToCell.Length() * agentView.Length());
+			float costiter = (AgentToCell.Dot(agentView));
 
 			// Check if the cell is within agent's field of view
-			if (costiter >= -0.1f/*std::cosf(PI / 1.99f)*/ && is_clear_path(agentRow, agentCol, row, col))
+			if (costiter >= -0.1f && is_clear_path(agentRow, agentCol, row, col))
 			{
 				// Mark the cell as visible
 				layer.set_value(row, col, 1.0f);
