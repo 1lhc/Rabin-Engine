@@ -22,8 +22,7 @@ float distance_to_closest_wall(int row, int col)
 		and a wall, respectively.
 	*/
 
-	// WRITE YOUR CODE HERE
-   
+	// WRITE YOUR CODE HERE  
 	float minDistance = FLT_MAX; // Initialize minDistance to a large value
 
 	// Iterate over all cells in the map, including cells outside the map bounds
@@ -451,7 +450,6 @@ void enemy_field_of_view(MapLayer<float>& layer, float fovAngle, float closeDist
 		}
 	}
 
-	//float fieldofview = static_cast<float>(std::cos((180.f * M_PI / 180.f) / 2));
 	for (int row = 0; row < terrain->get_map_height(); ++row)
 	{
 		for (int col = 0; col < terrain->get_map_width(); ++col)
@@ -467,8 +465,6 @@ void enemy_field_of_view(MapLayer<float>& layer, float fovAngle, float closeDist
 				}
 			}
 			else {
-				// GridPos enemyFacingGridPos = terrain->get_grid_position(enemy->get_forward_vector());
-
 				Vec3 enemyView = enemy->get_forward_vector();
 				enemyView.Normalize();
 				Vec3 AgentToCell = -enemy->get_position() + terrain->get_world_position(row, col);
@@ -493,71 +489,9 @@ void enemy_field_of_view(MapLayer<float>& layer, float fovAngle, float closeDist
 						set value
 			}
 			*/
-
-			/*	if (terrain->is_wall(row, col)) {
-					continue;
-				}*/
-				// Calculate the vector from enemy to cell
-
-
-				//if (is_clear_path(enemyRow, enemyCol, row, col))
-				//{
-				//	if (AgentToCell.Length() < closeDistance) {
-
-				//		layer.set_value(row, col, occupancyValue);// Mark the cell as visible
-				//	}
-				//	// Check if the cell is within agent's field of view
-				//	if (costheta < std::cosf(fovAngle / 360.f * PI))
-				//	{
-				//		// Mark the cell as visible
-				//		layer.set_value(row, col, occupancyValue);
-				//	}
-				//}
 		}
 	}
 }
-// Calculate the view vector from the enemy agent.
-/*Vector2D enemyPos = enemy->getPosition();
-Vector2D enemyFacing = enemy->getFacingDirection();*/
-//Vec3 enemyPos = enemy->get_position();
-//Vec3 enemyFacing = enemy->get_forward_vector();
-
-//GridPos ePos = terrain->get_grid_position(enemyPos);
-//// Iterate over every cell in the layer.
-//for (int i = 0; i < terrain->get_map_width(); i++)
-//{
-//	for (int j = 0; j < terrain->get_map_height(); j++)
-//	{
-//		// Get the vector from the enemy to the current cell.
-//		Vec3 cellPos = { static_cast<float>(j), 0.f, static_cast<float>(i) }; // MAYBE WRONG
-//		Vec3 toCell = cellPos - enemyPos;
-
-//		// Calculate the dot product between the view vector and the vector to the cell.
-//		//float dotProduct = Vector2D::dot(enemyFacing.normalized(), toCell.normalized());
-//		float dotProduct = enemyFacing.Dot(toCell);
-
-
-//		// Compare the cosines to check if the cell is within the field of view cone.
-//		if (dotProduct >= cosf(fovAngle / 2.0f))
-//		{
-//			// Check if the cell is close enough to the enemy.
-//			if (toCell.Length() <= closeDistance)
-//			{
-//				// Check if the cell is visible to the enemy.
-//				if (is_clear_path(ePos.row, ePos.col, i, j))
-//					/*layer(i, j) = occupancyValue;*/
-//					layer.set_value(i, j, occupancyValue);
-//			}
-//			else
-//			{
-//				// Mark the cell with the occupancy value.
-//				// layer(i, j) = occupancyValue;
-//				layer.set_value(i, j, occupancyValue);
-//			}
-//		}
-//	}
-//}
-
 
 bool enemy_find_player(MapLayer<float>& layer, AStarAgent* enemy, Agent* player)
 {
@@ -617,7 +551,7 @@ bool enemy_seek_player(MapLayer<float>& layer, AStarAgent* enemy)
 			}
 		}
 	}
-	// int count = 0;
+
 	Vec3 targetCell;
 	float closestDistance = FLT_MAX;
 	for (int i = 0; i < terrain->get_map_width(); i++)
