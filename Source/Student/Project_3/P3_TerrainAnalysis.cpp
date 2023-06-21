@@ -233,10 +233,10 @@ void analyze_agent_vision(MapLayer<float>& layer, const Agent* agent)
 			// Calculate the vector from agent to cell
 			Vec3 AgentToCell = terrain->get_world_position(row, col) - agent->get_position();
 			AgentToCell.Normalize();
-			float costiter = (AgentToCell.Dot(agentView));
+			float costheta = (AgentToCell.Dot(agentView));
 
 			// Check if the cell is within agent's field of view
-			if (costiter >= -0.1f && is_clear_path(agentRow, agentCol, row, col))
+			if (costheta >= -0.1f && is_clear_path(agentRow, agentCol, row, col))
 			{
 				// Mark the cell as visible
 				layer.set_value(row, col, 1.0f);
@@ -334,48 +334,7 @@ void propagate_dual_occupancy(MapLayer<float>& layer, float decay, float growth)
 	*/
 
 	// WRITE YOUR CODE HERE
-	 // Step 1: Initialize a temporary layer with the same dimensions as the given layer
-	float tempLayer[40][40];
-	for (int i = 0; i < 40; i++) {
-		for (int j = 0; j < 40; j++) {
-			tempLayer[i][j] = layer.get_value(i, j); // Initialize with current values
-		}
-	}
-
-	// Step 2: Process each cell in the given layer
-	for (int i = 0; i < 40; i++) {
-		for (int j = 0; j < 40; j++) {
-			// Step 1: Get the value of each neighbor and apply decay factor
-			float maxNeighborValue = 0.0;
-			for (int dx = -1; dx <= 1; dx++) {
-				for (int dy = -1; dy <= 1; dy++) {
-					if (dx == 0 && dy == 0) continue; // Skip the current cell
-					int nx = i + dx;
-					int ny = j + dy;
-					if (nx >= 0 && nx < 40 && ny >= 0 && ny < 40) {
-						float neighborValue = layer.get_value(nx, ny) * decay;
-						if (std::abs(neighborValue) > std::abs(maxNeighborValue)) {
-							maxNeighborValue = neighborValue;
-						}
-					}
-				}
-			}
-
-			// Step 3: Linearly interpolate from the cell's current value to the value from step 2
-			float currentValue = layer.get_value(i, j);
-			float newValue = lerp(currentValue, maxNeighborValue, growth);
-
-			// Step 4: Store the value from step 3 in the temporary layer
-			tempLayer[i][j] = newValue;
-		}
-	}
-
-	// Step 5: Write the temporary layer into the given layer
-	for (int i = 0; i < 40; i++) {
-		for (int j = 0; j < 40; j++) {
-			layer.set_value(i, j, tempLayer[i][j]);
-		}
-	}
+	
 }
 
 void normalize_solo_occupancy(MapLayer<float>& layer)
