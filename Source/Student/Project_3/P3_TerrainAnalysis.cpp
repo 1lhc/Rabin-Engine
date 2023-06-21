@@ -23,29 +23,7 @@ float distance_to_closest_wall(int row, int col)
 	*/
 
 	// WRITE YOUR CODE HERE
-   // float minDistance = FLT_MAX; // Initialize minDistance to a large value
-
-   //// Iterate over all cells in the map
-   // for (int i = 0; i < terrain->get_map_height(); i++)
-   // {
-   //     for (int j = 0; j < terrain->get_map_width(); j++)
-   //     {
-   //         // Check if the cell is a valid grid position and a wall
-   //         if ((terrain->is_valid_grid_position(i, j) && terrain->is_wall(i, j)) || !terrain->is_valid_grid_position(i, j))
-   //         {
-   //             // Calculate the Euclidean distance between the current cell and the input cell (row, col)
-   //             float distance = static_cast<float>(sqrt(pow(j - col, 2) + pow(i - row, 2)));
-
-   //             // Update minDistance if the calculated distance is smaller
-   //             if (distance < minDistance)
-   //             {
-   //                 minDistance = distance;
-   //             }
-   //         }
-   //     }
-   // }
-
-   // return minDistance;
+   
 	float minDistance = FLT_MAX; // Initialize minDistance to a large value
 
 	// Iterate over all cells in the map, including cells outside the map bounds
@@ -72,7 +50,6 @@ float distance_to_closest_wall(int row, int col)
 	}
 
 	return minDistance;
-	// return 0.0f; // REPLACE THIS
 }
 
 bool is_clear_path(int row0, int col0, int row1, int col1)
