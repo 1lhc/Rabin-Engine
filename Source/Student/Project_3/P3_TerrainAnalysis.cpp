@@ -90,10 +90,12 @@ bool is_clear_path(int row0, int col0, int row1, int col1)
 	// WRITE YOUR CODE HERE
 	Vec2 zhongjian0 = { terrain->get_world_position(row0, col0).z, terrain->get_world_position(row0, col0).x };
 	Vec2 zhongjian1 = { terrain->get_world_position(row1, col1).z, terrain->get_world_position(row1, col1).x };
-	float halfcellLength = terrain->get_world_position(0, 0).z;
+	//float halfcellLength = terrain->get_world_position(0, 0).z;
+	float halfcellLength = (terrain->get_world_position(0, 1).z - terrain->get_world_position(0, 0).z) / 2.f;
+
 
 	// Puff out the four boundary lines slightly
-	float epsilon = 0.001f;
+	float epsilon = 0.00f;
 
 	int minRow = std::min(row0, row1);
 	int minCol = std::min(col0, col1);
@@ -106,10 +108,10 @@ bool is_clear_path(int row0, int col0, int row1, int col1)
 			//for (int r = 0; r < terrain->get_map_height(); r++) {
 			//	for (int c = 0; c < terrain->get_map_width(); c++) {
 			if (terrain->is_wall(r, c)) {
-				Vec2 bottomLeft = { terrain->get_world_position(r, c).z - halfcellLength, terrain->get_world_position(r, c).x - halfcellLength }; // Center point of wall cell (r, c)
-				Vec2 bottomRight = { bottomLeft.x + 2 * halfcellLength, bottomLeft.y };
-				Vec2 topLeft = { bottomLeft.x, bottomLeft.y + 2 * halfcellLength };
-				Vec2 topRight = { topLeft.x + 2 * halfcellLength, topLeft.y };
+				Vec2 bottomLeft = { terrain->get_world_position(r, c).z - halfcellLength + epsilon, terrain->get_world_position(r, c).x - halfcellLength + epsilon }; // Center point of wall cell (r, c)
+				Vec2 bottomRight = { bottomLeft.x + 2 * halfcellLength + epsilon, bottomLeft.y + epsilon };
+				Vec2 topLeft = { bottomLeft.x + epsilon, bottomLeft.y + 2 * halfcellLength + epsilon };
+				Vec2 topRight = { topLeft.x + 2 * halfcellLength + epsilon, topLeft.y + epsilon };
 				// Check intersection with the four boundary lines of the wall cell
 				if (line_intersect(zhongjian0, zhongjian1, bottomLeft, bottomRight) ||
 					line_intersect(zhongjian0, zhongjian1, bottomLeft, topLeft) ||
@@ -184,6 +186,53 @@ void analyze_visibility(MapLayer<float>& layer)
 void analyze_visible_to_cell(MapLayer<float>& layer, int row, int col)
 {
 	/*
+		algorithm:
+		loop thru width
+			loop thru height
+				if wall, skip
+				if helper(row, col, row1, col1)
+					layer->set_val(1.0f)
+				else
+					check if valid neighbors/not walls
+						check if visible between current cell & neighbor AND neighbor & surrounding cell
+							layer->set_val(0.5f)
+					else
+						layer->set_val(0.f)
+	*/
+	//for (int r = 0; r < terrain->get_map_width(); r++) {
+	//	for (int c = 0; c < terrain->get_map_height(); c++) {
+	//		if (terrain->is_wall(r, c)) {
+	//			continue;
+	//		}
+	//		if (is_clear_path(r, c, row, col)) {
+	//			layer.set_value(r, c, 1.f);
+	//		}
+	//		else {
+	//			for (int i = 0; i < terrain->get_map_height(); ++i) {
+	//				for (int j = 0; j < terrain->get_map_width(); ++j) {
+	//			for (int dx = -1; dx <= 1; dx++) {
+	//				for (int dy = -1; dy <= 1; dy++) {
+	//					if (dx == 0 && dy == 0) continue; // Skip the current cell
+	//					int nx = r + dx;
+	//					int ny = c + dy;
+	//					if (terrain->is_valid_grid_position(nx, ny) && !terrain->is_wall(nx, ny) && layer.get_value(nx, ny) != 1.0f) {
+	//						if (is_clear_path(r, c, nx, ny) && is_clear_path(row, col, nx, ny)) {
+	//							layer.set_value(nx, ny, 0.5f);
+	//						}
+	//					}
+	//					else {
+	//						layer.set_value(nx, ny, 0.f);
+	//					}
+	//				}
+	//			}
+	//				}
+	//			}
+	//		}
+	//	}
+	//}
+
+
+	/*
 		For every cell in the given layer mark it with 1.0 if it is visible to the given cell,
 		0.5 if it isn't visible but is next to a visible cell,
 		or 0.0 otherwise.
@@ -199,74 +248,198 @@ void analyze_visible_to_cell(MapLayer<float>& layer, int row, int col)
 
 	for (int r = 0; r < numRows; r++) {
 		for (int c = 0; c < numCols; c++) {
-			if (!terrain->is_wall(r, c)) {
-				if (r == row && c == col) {
-					layer.set_value(r, c, 1.0f); // Given cell is always visible to itself
-				}
-				else if (is_clear_path(row, col, r, c)) {
-					layer.set_value(r, c, 1.0f); // Visible cell
+			layer.set_value(r, c, 0.0f);
+			if (is_clear_path(r, c, row, col)) {
+				layer.set_value(r, c, 1.0f);
+			}
+		}
+	}
 
-
-				/*	if (terrain->is_valid_grid_position(r + 1, c) && !terrain->is_wall(r + 1, c) && layer.get_value(r + 1, c) == 0.0f) {
-						layer.set_value(r + 1, c, 0.5f);
+	for (int r = 0; r < numRows; r++) {
+		for (int c = 0; c < numCols; c++) {
+			if (layer.get_value(r, c) == 1.0f) {
+				for (int dx = -1; dx <= 1; dx++) {
+					for (int dy = -1; dy <= 1; dy++) {
+						if (dx == 0 && dy == 0) continue; // Skip the current cell
+						int nx = r + dx;
+						int ny = c + dy;
+						if (terrain->is_valid_grid_position(nx, ny) && !terrain->is_wall(nx, ny) && layer.get_value(nx, ny) != 1.0f && is_clear_path(r, c, nx, ny)) {
+							layer.set_value(nx, ny, 0.5f);
+						}
 					}
-					if (terrain->is_valid_grid_position(r, c - 1) && !terrain->is_wall(r, c - 1) && layer.get_value(r, c - 1) == 0.0f) {
-						layer.set_value(r, c - 1, 0.5f);
-					}
-					if (terrain->is_valid_grid_position(r, c + 1) && !terrain->is_wall(r, c + 1) && layer.get_value(r, c + 1) == 0.0f) {
-						layer.set_value(r, c + 1, 0.5f);
-					}
-					if (terrain->is_valid_grid_position(r - 1, c) && !terrain->is_wall(r - 1, c) && layer.get_value(r - 1, c) == 0.0f) {
-						layer.set_value(r - 1, c, 0.5f);
-					}
-					bool topLeftwallexists = false, topRightwallexists = false, bottomLeftwallexists = false, bottomRightwallexists = false;
-
-					if (terrain->is_valid_grid_position(r + 1, c) && terrain->is_wall(r + 1, c) &&
-						terrain->is_valid_grid_position(r, c - 1) && terrain->is_wall(r, c - 1)) {
-						topLeftwallexists = true;
-					}
-
-					if (terrain->is_valid_grid_position(r + 1, c) && terrain->is_wall(r + 1, c) &&
-						terrain->is_valid_grid_position(r, c + 1) && terrain->is_wall(r, c + 1)) {
-						topRightwallexists = true;
-					}
-
-					if (terrain->is_valid_grid_position(r - 1, c) && terrain->is_wall(r - 1, c) &&
-						terrain->is_valid_grid_position(r, c - 1) && terrain->is_wall(r, c - 1)) {
-						bottomLeftwallexists = true;
-					}
-
-					if (terrain->is_valid_grid_position(r - 1, c) && terrain->is_wall(r - 1, c) &&
-						terrain->is_valid_grid_position(r, c + 1) && terrain->is_wall(r, c + 1)) {
-						bottomRightwallexists = true;
-					}
-					if (topLeftwallexists == false) {
-						if (terrain->is_valid_grid_position(r + 1, c - 1) && !terrain->is_wall(r + 1, c - 1) && layer.get_value(r + 1, c - 1) == 0.0f)
-							layer.set_value(r + 1, c - 1, 0.5f);
-					}
-
-					if (topRightwallexists == false) {
-						if (terrain->is_valid_grid_position(r + 1, c + 1) && !terrain->is_wall(r + 1, c + 1) && layer.get_value(r + 1, c + 1) == 0.0f)
-							layer.set_value(r + 1, c + 1, 0.5f);
-					}
-
-					if (bottomLeftwallexists == false) {
-						if (terrain->is_valid_grid_position(r - 1, c - 1) && !terrain->is_wall(r - 1, c - 1) && layer.get_value(r - 1, c - 1) == 0.0f)
-							layer.set_value(r - 1, c - 1, 0.5f);
-					}
-					if (bottomRightwallexists == false) {
-						if (terrain->is_valid_grid_position(r - 1, c + 1) && !terrain->is_wall(r - 1, c + 1) && layer.get_value(r - 1, c + 1) == 0.0f)
-							layer.set_value(r - 1, c + 1, 0.5f);
-					}*/
-				}
-				else {
-					layer.set_value(r, c, 0.0f); // Not visible cell
 				}
 			}
 		}
 	}
 
+
+
+
+
+	//for (int r = 0; r < numRows; r++) {
+	//	for (int c = 0; c < numCols; c++) {
+	//		if (!terrain->is_wall(r, c)) {
+	//			if (r == row && c == col) {
+	//				layer.set_value(r, c, 1.0f); // Given cell is always visible to itself
+	//				/*for (int i = 0; i < terrain->get_map_height(); ++i) {
+	//					for (int j = 0; j < terrain->get_map_width(); ++j) {*/
+	//				for (int dx = -1; dx <= 1; dx++) {
+	//					for (int dy = -1; dy <= 1; dy++) {
+	//						if (dx == 0 && dy == 0) continue; // Skip the current cell
+	//						int nx = r + dx;
+	//						int ny = c + dy;
+	//						if (terrain->is_valid_grid_position(nx, ny) && !terrain->is_wall(nx, ny) && layer.get_value(nx, ny) != 1.0f && is_clear_path(r, c, nx, ny)) {
+	//							layer.set_value(nx, ny, 0.5f);
+	//						}
+	//					}
+	//				}
+	//				/*}
+	//			}*/
+	//			}
+	//			/*else*/ if (is_clear_path(row, col, r, c)) {
+	//				layer.set_value(r, c, 1.0f); // Visible cell
+	//				/*for (int i = 0; i < terrain->get_map_height(); ++i) {
+	//					for (int j = 0; j < terrain->get_map_width(); ++j) {*/
+	//				for (int dx = -1; dx <= 1; dx++) {
+	//					for (int dy = -1; dy <= 1; dy++) {
+	//						//std::cout << dx << "," << dy << "\n";
+	//						if (dx == 0 && dy == 0) continue; // Skip the current cell
+	//						int nx = r + dx;
+	//						int ny = c + dy;
+	//						if (terrain->is_valid_grid_position(nx, ny) && !terrain->is_wall(nx, ny) && layer.get_value(nx, ny) != 1.0f && is_clear_path(r, c, nx, ny)) {
+	//							layer.set_value(nx, ny, 0.5f);
+	//						}
+	//					}
+	//				}
+
+	//				if (terrain->is_valid_grid_position(r + 1, c) && !terrain->is_wall(r + 1, c) && layer.get_value(r + 1, c) != 1.0f && is_clear_path(r, c, r + 1, c)) {
+	//					layer.set_value(r + 1, c, 0.5f);
+	//				}
+	//				/*}
+	//			}*/
+	//			}
+	//			else {
+	//				layer.set_value(r, c, 0.0f); // Not visible cell
+	//			}
+	//		}
+	//	}
+	//}
 }
+
+//				/*if (terrain->is_valid_grid_position(r + 1, c) && !terrain->is_wall(r + 1, c) && layer.get_value(r + 1, c) != 1.0f) {
+//					layer.set_value(r + 1, c, 0.5f);
+//				}
+//				if (terrain->is_valid_grid_position(r, c - 1) && !terrain->is_wall(r, c - 1) && layer.get_value(r, c - 1) != 1.0f) {
+//					layer.set_value(r, c - 1, 0.5f);
+//				}
+//				if (terrain->is_valid_grid_position(r, c + 1) && !terrain->is_wall(r, c + 1) && layer.get_value(r, c + 1) != 1.0f) {
+//					layer.set_value(r, c + 1, 0.5f);
+//				}
+//				if (terrain->is_valid_grid_position(r - 1, c) && !terrain->is_wall(r - 1, c) && layer.get_value(r - 1, c) != 1.0f) {
+//					layer.set_value(r - 1, c, 0.5f);
+//				}
+
+//				if (terrain->is_valid_grid_position(r + 1, c - 1) && !terrain->is_wall(r + 1, c - 1) && layer.get_value(r + 1, c - 1) != 1.0f) {
+//					if (is_clear_path(r, c, r + 1, c - 1)) {
+//						layer.set_value(r + 1, c - 1, 0.5f);
+//					}
+//				}
+
+//				if (terrain->is_valid_grid_position(r + 1, c + 1) && !terrain->is_wall(r + 1, c + 1) && layer.get_value(r + 1, c + 1) != 1.0f) {
+//					if (is_clear_path(r, c, r + 1, c + 1)) {
+//						layer.set_value(r + 1, c + 1, 0.5f);
+//					}
+//				}
+
+//				if (terrain->is_valid_grid_position(r - 1, c - 1) && !terrain->is_wall(r - 1, c - 1) && layer.get_value(r - 1, c - 1) != 1.0f) {
+//					if (is_clear_path(r, c, r - 1, c - 1)) {
+//						layer.set_value(r - 1, c - 1, 0.5f);
+//					}
+//				}
+
+//				if (terrain->is_valid_grid_position(r - 1, c + 1) && !terrain->is_wall(r - 1, c + 1) && layer.get_value(r - 1, c + 1) != 1.0f) {
+//					if (is_clear_path(r, c, r - 1, c + 1)) {
+//						layer.set_value(r - 1, c + 1, 0.5f);
+//					}
+//				}*/
+//				/*bool topLeftwallexists = false, topRightwallexists = false, bottomLeftwallexists = false, bottomRightwallexists = false;
+
+//				if (terrain->is_valid_grid_position(r + 1, c) && terrain->is_wall(r + 1, c) &&
+//					terrain->is_valid_grid_position(r, c - 1) && terrain->is_wall(r, c - 1)) {
+//					topLeftwallexists = true;
+//				}
+
+//				if (terrain->is_valid_grid_position(r + 1, c) && terrain->is_wall(r + 1, c) &&
+//					terrain->is_valid_grid_position(r, c + 1) && terrain->is_wall(r, c + 1)) {
+//					topRightwallexists = true;
+//				}
+
+//				if (terrain->is_valid_grid_position(r - 1, c) && terrain->is_wall(r - 1, c) &&
+//					terrain->is_valid_grid_position(r, c - 1) && terrain->is_wall(r, c - 1)) {
+//					bottomLeftwallexists = true;
+//				}
+
+//				if (terrain->is_valid_grid_position(r - 1, c) && terrain->is_wall(r - 1, c) &&
+//					terrain->is_valid_grid_position(r, c + 1) && terrain->is_wall(r, c + 1)) {
+//					bottomRightwallexists = true;
+//				}
+//				if (topLeftwallexists == false) {
+//					if (terrain->is_valid_grid_position(r + 1, c - 1) && !terrain->is_wall(r + 1, c - 1) && layer.get_value(r + 1, c - 1) == 0.0f)
+//						layer.set_value(r + 1, c - 1, 0.5f);
+//				}
+
+//				if (topRightwallexists == false) {
+//					if (terrain->is_valid_grid_position(r + 1, c + 1) && !terrain->is_wall(r + 1, c + 1) && layer.get_value(r + 1, c + 1) == 0.0f)
+//						layer.set_value(r + 1, c + 1, 0.5f);
+//				}
+
+//				if (bottomLeftwallexists == false) {
+//					if (terrain->is_valid_grid_position(r - 1, c - 1) && !terrain->is_wall(r - 1, c - 1) && layer.get_value(r - 1, c - 1) == 0.0f)
+//						layer.set_value(r - 1, c - 1, 0.5f);
+//				}
+//				if (bottomRightwallexists == false) {
+//					if (terrain->is_valid_grid_position(r - 1, c + 1) && !terrain->is_wall(r - 1, c + 1) && layer.get_value(r - 1, c + 1) == 0.0f)
+//						layer.set_value(r - 1, c + 1, 0.5f);
+//				}*/
+//			}
+
+	//				//for (int i = 0; i < terrain->get_map_height(); ++i) {
+	//				//	for (int j = 0; j < terrain->get_map_width(); ++j) {							
+	//				//		for (int dx = -1; dx <= 1; dx++) {
+	//				//			for (int dy = -1; dy <= 1; dy++) {
+	//				//				if (dx == 0 && dy == 0) continue; // Skip the current cell
+	//				//				int nx = i + dx;
+	//				//				int ny = j + dy;
+	//				//				if (terrain->is_valid_grid_position(nx,ny) && !terrain->is_wall(nx,ny) && layer.get_value(nx,ny)==1.0f && ) {
+	//				//					
+	//				//				}
+	//				//			}
+	//				//		}
+	//				//	}
+	//				//}
+	//				for (int i = 0; i < terrain->get_map_height(); ++i) {
+	//					for (int j = 0; j < terrain->get_map_width(); ++j) {
+	//						for (int dx = -1; dx <= 1; dx++) {
+	//							for (int dy = -1; dy <= 1; dy++) {
+	//								if (dx == 0 && dy == 0) continue; // Skip the current cell
+	//								int nx = i + dx;
+	//								int ny = j + dy;
+	//								if (terrain->is_valid_grid_position(nx, ny) && !terrain->is_wall(nx, ny) && layer.get_value(nx, ny) != 1.0f && is_clear_path(r, c, nx, ny)) {
+	//									layer.set_value(nx, ny, 0.5f);
+	//								}
+	//							}
+	//						}
+	//					}
+	//				}
+
+
+/*		}
+	}*/
+	//		}
+	//	}
+	//}
+
+//}
 
 void analyze_agent_vision(MapLayer<float>& layer, const Agent* agent)
 {
@@ -340,6 +513,7 @@ void analyze_agent_vision(MapLayer<float>& layer, const Agent* agent)
 	int agentRow = terrain->get_grid_position(agent->get_position()).row;
 	int agentCol = terrain->get_grid_position(agent->get_position()).col;
 	Vec3 agentView = agent->get_forward_vector();
+	agentView.Normalize();
 	//float fieldofview = static_cast<float>(std::cos((180.f * M_PI / 180.f) / 2));
 	for (int row = 0; row < layerHeight; ++row)
 	{
@@ -347,10 +521,11 @@ void analyze_agent_vision(MapLayer<float>& layer, const Agent* agent)
 		{
 			// Calculate the vector from agent to cell
 			Vec3 AgentToCell = terrain->get_world_position(row, col) - agent->get_position();
+			AgentToCell.Normalize();
 			float costiter = (AgentToCell.Dot(agentView));// / (AgentToCell.Length() * agentView.Length());
 
 			// Check if the cell is within agent's field of view
-			if (costiter >= std::cosf(PI / 1.99f) && is_clear_path(agentRow, agentCol, row, col))
+			if (costiter >= -0.1f/*std::cosf(PI / 1.99f)*/ && is_clear_path(agentRow, agentCol, row, col))
 			{
 				// Mark the cell as visible
 				layer.set_value(row, col, 1.0f);
@@ -394,7 +569,7 @@ void propagate_solo_occupancy(MapLayer<float>& layer, float decay, float growth)
 					if (dx == 0 && dy == 0) continue; // Skip the current cell
 					int nx = i + dx;
 					int ny = j + dy;
-					if (terrain->is_valid_grid_position(nx,ny) && !terrain->is_wall(nx,ny)) {
+					if (terrain->is_valid_grid_position(nx, ny) && !terrain->is_wall(nx, ny)) {
 						float distance = static_cast<float>(sqrt(pow(i - nx, 2) + pow(j - ny, 2)));
 						if (terrain->is_valid_grid_position(nx, ny)) {
 							float neighborValue = layer.get_value(nx, ny) * exp(-1 * distance * decay);
@@ -550,89 +725,124 @@ void enemy_field_of_view(MapLayer<float>& layer, float fovAngle, float closeDist
 		This creates a radius around the enemy that the player can be detected within, as well
 		as a fov cone.
 	*/
-
 	// WRITE YOUR CODE HERE
-	 // Clear out the old values in the map layer by setting any negative value to 0.
-	for (int i = 0; i < terrain->get_map_width(); i++)
+	// Clear out the old values in the map layer by setting any negative value to 0.
+	for (int i = 0; i < terrain->get_map_height(); i++)
 	{
-		for (int j = 0; j < terrain->get_map_height(); j++)
+		for (int j = 0; j < terrain->get_map_width(); j++)
 		{
-			if (layer.get_value(i, j) < 0)
-				layer.set_value(i, j, 0.f);
+			if (layer.get_value(i, j) < 0) { layer.set_value(i, j, 0.0f); }
 		}
 	}
 
-	const int layerHeight = terrain->get_map_height();
-	const int layerWidth = terrain->get_map_width();
-	int enemyRow = terrain->get_grid_position(enemy->get_position()).row;
-	int enemyCol = terrain->get_grid_position(enemy->get_position()).col;
-	Vec3 enemyView = enemy->get_forward_vector();
-	float fieldofview = static_cast<float>(std::cos((180.f * M_PI / 180.f) / 2));
-	for (int row = 0; row < layerHeight; ++row)
+	//float fieldofview = static_cast<float>(std::cos((180.f * M_PI / 180.f) / 2));
+	for (int row = 0; row < terrain->get_map_height(); ++row)
 	{
-		for (int col = 0; col < layerWidth; ++col)
+		for (int col = 0; col < terrain->get_map_width(); ++col)
 		{
-			// Calculate the vector from agent to cell
-			Vec3 AgentToCell = terrain->get_world_position(row, col) - enemy->get_position();
-			float costiter = (AgentToCell.Dot(enemyView)) / (AgentToCell.Length() * enemyView.Length());
-			if (AgentToCell.Length() < closeDistance) {
-				if (is_clear_path(enemyRow, enemyCol, row, col))
-				{
-					// Mark the cell as visible
+			GridPos enemyGridPos = terrain->get_grid_position(enemy->get_position());
+
+			int distancerow = enemyGridPos.row - row;
+			int distancecol = enemyGridPos.col - col;
+
+			if ((sqrtf(static_cast<float>(pow(distancerow, 2) + pow(distancecol, 2)))) < closeDistance) {
+				if (is_clear_path(row, col, enemyGridPos.row, enemyGridPos.col)) {
 					layer.set_value(row, col, occupancyValue);
 				}
 			}
-			// Check if the cell is within agent's field of view
-			else if (costiter > std::cosf(fovAngle / 2) && is_clear_path(enemyRow, enemyCol, row, col))
-			{
-				// Mark the cell as visible
-				layer.set_value(row, col, occupancyValue);
+			else {
+				Vec3 enemyView = enemy->get_forward_vector();
+				enemyView.Normalize();
+				Vec3 AgentToCell = enemy->get_position() - terrain->get_world_position(row, col);
+				AgentToCell.Normalize();
+				float costheta = AgentToCell.Dot(enemyView);
+				if (costheta <= cos((fovAngle / 2.f) * 3.14f / 180.f)) {
+					if (is_clear_path(row, col, enemyGridPos.row, enemyGridPos.col)) {
+						layer.set_value(row, col, occupancyValue);
+					}
+				}
 			}
+			/*if (dist between enemy and cell is close enough) {
+					if is_clear_path() {
+						set occupancy value
+					}
+			else {
+				enemyfacedirection
+				enemytocelldirection
+						dot product
+						if dotproduct < cos((fovAngle/2) * 3.14 / 180)
+						if(is_clear_path)
+						set value
+			}
+			*/
+
+
+
+
+			/*	if (terrain->is_wall(row, col)) {
+					continue;
+				}*/
+				// Calculate the vector from enemy to cell
+
+
+				//if (is_clear_path(enemyRow, enemyCol, row, col))
+				//{
+				//	if (AgentToCell.Length() < closeDistance) {
+
+				//		layer.set_value(row, col, occupancyValue);// Mark the cell as visible
+				//	}
+				//	// Check if the cell is within agent's field of view
+				//	if (costheta < std::cosf(fovAngle / 360.f * PI))
+				//	{
+				//		// Mark the cell as visible
+				//		layer.set_value(row, col, occupancyValue);
+				//	}
+				//}
 		}
 	}
-
-	// Calculate the view vector from the enemy agent.
-	/*Vector2D enemyPos = enemy->getPosition();
-	Vector2D enemyFacing = enemy->getFacingDirection();*/
-	//Vec3 enemyPos = enemy->get_position();
-	//Vec3 enemyFacing = enemy->get_forward_vector();
-
-	//GridPos ePos = terrain->get_grid_position(enemyPos);
-	//// Iterate over every cell in the layer.
-	//for (int i = 0; i < terrain->get_map_width(); i++)
-	//{
-	//	for (int j = 0; j < terrain->get_map_height(); j++)
-	//	{
-	//		// Get the vector from the enemy to the current cell.
-	//		Vec3 cellPos = { static_cast<float>(j), 0.f, static_cast<float>(i) }; // MAYBE WRONG
-	//		Vec3 toCell = cellPos - enemyPos;
-
-	//		// Calculate the dot product between the view vector and the vector to the cell.
-	//		//float dotProduct = Vector2D::dot(enemyFacing.normalized(), toCell.normalized());
-	//		float dotProduct = enemyFacing.Dot(toCell);
-
-
-	//		// Compare the cosines to check if the cell is within the field of view cone.
-	//		if (dotProduct >= cosf(fovAngle / 2.0f))
-	//		{
-	//			// Check if the cell is close enough to the enemy.
-	//			if (toCell.Length() <= closeDistance)
-	//			{
-	//				// Check if the cell is visible to the enemy.
-	//				if (is_clear_path(ePos.row, ePos.col, i, j))
-	//					/*layer(i, j) = occupancyValue;*/
-	//					layer.set_value(i, j, occupancyValue);
-	//			}
-	//			else
-	//			{
-	//				// Mark the cell with the occupancy value.
-	//				// layer(i, j) = occupancyValue;
-	//				layer.set_value(i, j, occupancyValue);
-	//			}
-	//		}
-	//	}
-	//}
 }
+// Calculate the view vector from the enemy agent.
+/*Vector2D enemyPos = enemy->getPosition();
+Vector2D enemyFacing = enemy->getFacingDirection();*/
+//Vec3 enemyPos = enemy->get_position();
+//Vec3 enemyFacing = enemy->get_forward_vector();
+
+//GridPos ePos = terrain->get_grid_position(enemyPos);
+//// Iterate over every cell in the layer.
+//for (int i = 0; i < terrain->get_map_width(); i++)
+//{
+//	for (int j = 0; j < terrain->get_map_height(); j++)
+//	{
+//		// Get the vector from the enemy to the current cell.
+//		Vec3 cellPos = { static_cast<float>(j), 0.f, static_cast<float>(i) }; // MAYBE WRONG
+//		Vec3 toCell = cellPos - enemyPos;
+
+//		// Calculate the dot product between the view vector and the vector to the cell.
+//		//float dotProduct = Vector2D::dot(enemyFacing.normalized(), toCell.normalized());
+//		float dotProduct = enemyFacing.Dot(toCell);
+
+
+//		// Compare the cosines to check if the cell is within the field of view cone.
+//		if (dotProduct >= cosf(fovAngle / 2.0f))
+//		{
+//			// Check if the cell is close enough to the enemy.
+//			if (toCell.Length() <= closeDistance)
+//			{
+//				// Check if the cell is visible to the enemy.
+//				if (is_clear_path(ePos.row, ePos.col, i, j))
+//					/*layer(i, j) = occupancyValue;*/
+//					layer.set_value(i, j, occupancyValue);
+//			}
+//			else
+//			{
+//				// Mark the cell with the occupancy value.
+//				// layer(i, j) = occupancyValue;
+//				layer.set_value(i, j, occupancyValue);
+//			}
+//		}
+//	}
+//}
+
 
 bool enemy_find_player(MapLayer<float>& layer, AStarAgent* enemy, Agent* player)
 {
@@ -675,31 +885,65 @@ bool enemy_seek_player(MapLayer<float>& layer, AStarAgent* enemy)
 
 	//return false; // REPLACE THIS
 	// Initialize variables to track the highest value and its position.
-	float highestValue = 0.0f;
+	float highestValue = -FLT_MAX;
 	Vec3 targetCell;
-
+	float closestDistance = FLT_MAX;
 	// Iterate over every cell in the layer.
 	for (int i = 0; i < terrain->get_map_width(); i++)
 	{
 		for (int j = 0; j < terrain->get_map_height(); j++)
 		{
-			float cellValue = layer.get_value(i, j);
+			/*
+			if(there is highest value)
+				calculate the distance between target and current and store the closer one
+			*/
+
+			/*if (terrain->is_wall(i, j)) {
+				continue;
+			}*/
+			//float cellValue = layer.get_value(i, j);
 			// Check if the cell value is higher than the current highest value.
-			if (cellValue > highestValue)
+			if (layer.get_value(i, j) > highestValue)
 			{
-				highestValue = cellValue;
-				targetCell = Vec3(static_cast<float>(j), 0.f, static_cast<float>(i));
+				highestValue = layer.get_value(i, j);
+				//targetCell = Vec3(static_cast<float>(j), 0.f, static_cast<float>(i));
 			}
+			//targetCell = terrain->get_world_position(i, j);
 			// If there are multiple cells with the same highest value, pick the closest one.
-			else if (cellValue == highestValue && targetCell.Length() > Vec3(static_cast<float>(j), 0.f, static_cast<float>(i)).Length())
-			{
-				targetCell = Vec3(static_cast<float>(j), 0.f, static_cast<float>(i));
+			//else if (cellValue == highestValue && targetCell.Length() > Vec3(static_cast<float>(j), 0.f, static_cast<float>(i)).Length())
+			//{
+			//	//targetCell = Vec3(static_cast<float>(j), 0.f, static_cast<float>(i));
+			//	targetCell = terrain->get_world_position(i, j);
+			//}
+		}
+	}
+	// int count = 0;
+	for (int i = 0; i < terrain->get_map_width(); i++)
+	{
+		for (int j = 0; j < terrain->get_map_height(); j++)
+		{
+			if (layer.get_value(i, j) == highestValue) {
+				Vec3 distanceVector = enemy->get_position() - terrain->get_world_position(i, j);
+				if (closestDistance > distanceVector.Length()) {
+					closestDistance = distanceVector.Length();
+				}
 			}
 		}
 	}
-
+	for (int i = 0; i < terrain->get_map_width(); i++)
+	{
+		for (int j = 0; j < terrain->get_map_height(); j++)
+		{
+			if (layer.get_value(i, j) == highestValue) {
+				Vec3 distanceVector = enemy->get_position() - terrain->get_world_position(i, j);
+				if (closestDistance == distanceVector.Length()) {
+					targetCell = terrain->get_world_position(i, j);
+				}
+			}
+		}
+	}
 	// Check if a target cell was found.
-	if (highestValue > 0.0f)
+	if (highestValue > 0.f)
 	{
 		// Set the target cell as the new target for the enemy agent.
 		enemy->path_to(targetCell);
