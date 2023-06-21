@@ -570,9 +570,6 @@ void propagate_solo_occupancy(MapLayer<float>& layer, float decay, float growth)
 					int nx = i + dx;
 					int ny = j + dy;
 					
-
-
-					
 					if (terrain->is_valid_grid_position(nx, ny) && !terrain->is_wall(nx, ny)) {
 						float distance = static_cast<float>(sqrt(pow(i - nx, 2) + pow(j - ny, 2)));
 						if (terrain->is_valid_grid_position(nx, ny)) {
@@ -888,12 +885,9 @@ bool enemy_seek_player(MapLayer<float>& layer, AStarAgent* enemy)
 	*/
 
 	// WRITE YOUR CODE HERE
-
-	//return false; // REPLACE THIS
 	// Initialize variables to track the highest value and its position.
 	float highestValue = -FLT_MAX;
-	Vec3 targetCell;
-	float closestDistance = FLT_MAX;
+	
 	// Iterate over every cell in the layer.
 	for (int i = 0; i < terrain->get_map_width(); i++)
 	{
@@ -904,26 +898,16 @@ bool enemy_seek_player(MapLayer<float>& layer, AStarAgent* enemy)
 				calculate the distance between target and current and store the closer one
 			*/
 
-			/*if (terrain->is_wall(i, j)) {
-				continue;
-			}*/
-			//float cellValue = layer.get_value(i, j);
 			// Check if the cell value is higher than the current highest value.
 			if (layer.get_value(i, j) > highestValue)
 			{
 				highestValue = layer.get_value(i, j);
-				//targetCell = Vec3(static_cast<float>(j), 0.f, static_cast<float>(i));
 			}
-			//targetCell = terrain->get_world_position(i, j);
-			// If there are multiple cells with the same highest value, pick the closest one.
-			//else if (cellValue == highestValue && targetCell.Length() > Vec3(static_cast<float>(j), 0.f, static_cast<float>(i)).Length())
-			//{
-			//	//targetCell = Vec3(static_cast<float>(j), 0.f, static_cast<float>(i));
-			//	targetCell = terrain->get_world_position(i, j);
-			//}
 		}
 	}
 	// int count = 0;
+	Vec3 targetCell;
+	float closestDistance = FLT_MAX;
 	for (int i = 0; i < terrain->get_map_width(); i++)
 	{
 		for (int j = 0; j < terrain->get_map_height(); j++)
@@ -937,20 +921,9 @@ bool enemy_seek_player(MapLayer<float>& layer, AStarAgent* enemy)
 			}
 		}
 	}
-	/*for (int i = 0; i < terrain->get_map_width(); i++)
-	{
-		for (int j = 0; j < terrain->get_map_height(); j++)
-		{
-			if (layer.get_value(i, j) == highestValue) {
-				Vec3 distanceVector = enemy->get_position() - terrain->get_world_position(i, j);
-				if (closestDistance == distanceVector.Length()) {
-					targetCell = terrain->get_world_position(i, j);
-				}
-			}
-		}
-	}*/
+	
 	// Check if a target cell was found.
-	if (highestValue > 0.f)
+	if (highestValue > -FLT_MAX)
 	{
 		// Set the target cell as the new target for the enemy agent.
 		enemy->path_to(targetCell);
