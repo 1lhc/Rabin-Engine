@@ -569,9 +569,16 @@ void propagate_solo_occupancy(MapLayer<float>& layer, float decay, float growth)
 					if (dx == 0 && dy == 0) continue; // Skip the current cell
 					int nx = i + dx;
 					int ny = j + dy;
+					
+
+
+					
 					if (terrain->is_valid_grid_position(nx, ny) && !terrain->is_wall(nx, ny)) {
 						float distance = static_cast<float>(sqrt(pow(i - nx, 2) + pow(j - ny, 2)));
 						if (terrain->is_valid_grid_position(nx, ny)) {
+							if (!is_clear_path(i, j, nx, ny)) {
+								continue;
+							}
 							float neighborValue = layer.get_value(nx, ny) * exp(-1 * distance * decay);
 							if (neighborValue > maxNeighborValue) {
 								maxNeighborValue = neighborValue;
@@ -751,12 +758,14 @@ void enemy_field_of_view(MapLayer<float>& layer, float fovAngle, float closeDist
 				}
 			}
 			else {
+				// GridPos enemyFacingGridPos = terrain->get_grid_position(enemy->get_forward_vector());
+
 				Vec3 enemyView = enemy->get_forward_vector();
 				enemyView.Normalize();
-				Vec3 AgentToCell = enemy->get_position() - terrain->get_world_position(row, col);
+				Vec3 AgentToCell = -enemy->get_position() + terrain->get_world_position(row, col);
 				AgentToCell.Normalize();
 				float costheta = AgentToCell.Dot(enemyView);
-				if (costheta <= cos((fovAngle / 2.f) * 3.14f / 180.f)) {
+				if (costheta >= cos((fovAngle / 2.f) * PI / 180.f)) {
 					if (is_clear_path(row, col, enemyGridPos.row, enemyGridPos.col)) {
 						layer.set_value(row, col, occupancyValue);
 					}
@@ -775,9 +784,6 @@ void enemy_field_of_view(MapLayer<float>& layer, float fovAngle, float closeDist
 						set value
 			}
 			*/
-
-
-
 
 			/*	if (terrain->is_wall(row, col)) {
 					continue;
@@ -923,14 +929,15 @@ bool enemy_seek_player(MapLayer<float>& layer, AStarAgent* enemy)
 		for (int j = 0; j < terrain->get_map_height(); j++)
 		{
 			if (layer.get_value(i, j) == highestValue) {
-				Vec3 distanceVector = enemy->get_position() - terrain->get_world_position(i, j);
+				Vec3 distanceVector = -enemy->get_position() + terrain->get_world_position(i, j);
 				if (closestDistance > distanceVector.Length()) {
 					closestDistance = distanceVector.Length();
+					targetCell = terrain->get_world_position(i, j);
 				}
 			}
 		}
 	}
-	for (int i = 0; i < terrain->get_map_width(); i++)
+	/*for (int i = 0; i < terrain->get_map_width(); i++)
 	{
 		for (int j = 0; j < terrain->get_map_height(); j++)
 		{
@@ -941,7 +948,7 @@ bool enemy_seek_player(MapLayer<float>& layer, AStarAgent* enemy)
 				}
 			}
 		}
-	}
+	}*/
 	// Check if a target cell was found.
 	if (highestValue > 0.f)
 	{
